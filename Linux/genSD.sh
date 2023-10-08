@@ -488,7 +488,7 @@ copy_gehstock_mist_cores() {
   for rbf in $(find "$srcroot" -iname '*.rbf' | sort); do
     dir=$(dirname "$rbf")
     shopt -s nocasematch
-    dst=${dir//$srcroot/$dstroot}; dst=${dst//'_MiST'/}; dst=${dst//'/Arcade/'/'/Arcade/Gehstock/'}
+    dst=${dir//$srcroot/}; dst=${dst//'_MiST'/}; dst=$dstroot/${dst//'/Arcade/'/'/Arcade/Gehstock/'}
     shopt -u nocasematch
     if [ ! -z "$(find "$dir" -maxdepth 1 -iname '*.mra')" ]; then
       # .mra file(s) in same folder as .rbf file
@@ -504,7 +504,7 @@ copy_gehstock_mist_cores() {
       echo -e "\n$rbf:"
       copy "$rbf" "$dst/$name"
       if [ ! -z "$(find "$dir" -iname '*.rom')" ]; then
-        cp -pu "$(find "$dir" -iname '*.rom')" "$dst/"
+        cp -pu $(find "$dir" -iname '*.rom') "$dst/"
       fi
     fi
   done
@@ -806,7 +806,7 @@ videopac_roms()        { download_url 'http://archive.org/download/Philips_Video
                          done
                        }
 zx8x_roms()            { download_url 'http://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/ZX8X/zx8x.rom' "$2/"; }
-zx_spectrum_roms()     { copy "$(find "$1" -name 'spectrum.rom' | head -1)" "$2/"; }
+zx_spectrum_roms()     { copy "$1/spectrum.rom" "$2/"; }
 bagman_roms()          {
                          download_url 'http://github.com/Gehstock/Mist_FPGA/raw/master/Arcade_MiST/Bagman Hardware/meta/Super Bagman.mra' '/tmp/'
                          process_mra '/tmp/Super Bagman.mra' "$2"

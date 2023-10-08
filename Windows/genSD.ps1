@@ -27,7 +27,7 @@
 #    https://archive.org/download/mame-merged/mame-merged/
 
 
-# using '/' instead of '\' as path separator makes this script more easy to compare against linux bash version 
+# using '/' instead of '\' as path separator makes this script more easy to compare against linux bash version
 filter replace-slash { $_ -replace "\\", "/" }
 
 # cache folders for repositories and MAME ROMs
@@ -241,9 +241,9 @@ function copy_latest_core {
           [string]$pattern ) # $3: optional name pattern
 
   Write-Host "  `'$($srcdir.Replace("$GIT_ROOT/",''))`' -> `'$($dstfile.Replace("$($PSScriptRoot | replace-slash)/",''))`'"
-  $latest = Get-ChildItem -Path "$srcdir/*$pattern*.rbf" | Sort LastWriteTime -Descending | Select -First 1
+  $latest = Get-ChildItem -Path "$srcdir/*$pattern*.rbf" | Where-Object {$_.length -gt 100} | Sort LastWriteTime -Descending | Select -First 1
   if ($latest -eq $null) {
-    $latest = Get-ChildItem -Path "$srcdir/*.rbf" | Sort LastWriteTime -Descending | Select -First 1
+    $latest = Get-ChildItem -Path "$srcdir/*.rbf" | Where-Object {$_.length -gt 100} | Sort LastWriteTime -Descending | Select -First 1
   }
   coppy $latest.fullname $dstfile
 }
@@ -537,7 +537,7 @@ function copy_gehstock_mist_cores {
     $dst = $dstroot+($dir.Replace($srcroot,'') -ireplace '_MiST', '').Replace('/Arcade/','/Arcade/Gehstock/')
     if (Test-Path "$dir/*.mra") {
       copy_mra_arcade_cores $dir $dir $dst
-    } elseif (Test-Path "dir/meta") {
+    } elseif (Test-Path "$dir/meta/*.mra") {
       # .mra file(s) in meta subfolder
       copy_mra_arcade_cores "$dir/meta" $dir $dst
     } else {
@@ -572,7 +572,7 @@ function copy_sorgelig_mist_cores {
     ( 'Computer/Ondra SPO 186',        'http://github.com/PetrM1/OndraSPO186_MiST.git',        'releases', 'ondra_roms'       ),
     ( 'Computer/Laser 500',            'http://github.com/nippur72/Laser500_MiST.git',         'releases', 'laser500_roms'    ),
     ( 'Computer/LM80C Color Computer', 'http://github.com/nippur72/LM80C_MiST.git',            'releases', 'lm80c_roms'       ),
-    ( 'Computer/Ondra SPO 186',        'http://github.com/PetrM1/OndraSPO186_MiST.git',        'releases', 'ondra_roms'       )
+    ( 'Computer/Apple 1',              'http://github.com/nippur72/Apple1_MiST.git',           'releases'                     ),
    # no release yet for CreatiVision core
    #( 'Computer/CreatiVision',         'http://github.com/nippur72/CreatiVision_MiST.git',     'releases'                     ),
    # other Sorgelig repos are already part of MiST binaries repo
@@ -636,7 +636,7 @@ function copy_eubrunosilva_sidi_cores {
     ( 'Computer/Microcomputer',           'Microcomputer'                    ),
     ( 'Computer/Specialist',              'Specialist'                       ),
     ( 'Computer/Vector-06',               'Vector06'                         )
-   # other eubrunosilva cores are already part of SiDi binaries repo 
+   # other eubrunosilva cores are already part of SiDi binaries repo
    #( 'Computer/Amstrad',                 'Amstrad',       'amstrad_roms'    ),
    #( 'Computer/BBC Micro',               'bbc',           'bbc_roms'        ),
    #( 'Computer/Oric',                    'Oric',          'oric_roms'       ),
@@ -821,6 +821,7 @@ function oric_roms          { param ( $1, $2 )
 function pcxt_roms          { param ( $1, $2 )
                               download_url 'http://github.com/MiSTer-devel/PCXT_MiSTer/raw/main/games/PCXT/hd_image.zip' "$2/" | Out-Null
                               expand "$2/hd_image.zip" "$2/"
+                              Move-Item "$2/Freedos_HD.vhd" -Destination "$2/PCXT.HD0" -Force
                               #download_url 'http://github.com/640-KB/GLaBIOS/releases/download/v0.2.4/GLABIOS_0.2.4_8T.ROM' | Out-Null
                               download_url 'http://github.com/somhi/PCXT_DeMiSTify/raw/main/SW/ROMs/pcxt_pcxt31.rom' "$2/" | Out-Null
                             }
@@ -846,7 +847,7 @@ function turbogfx_roms      { param ( $1, $2 )
                               download_url 'http://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/TurboGrafx16.zip' "$2/" | Out-Null
                               expand "$2/TurboGrafx16.zip" "$2/"
                               coppy "$2/TurboGrafx16/*" "$2/"
-                              Remove-Item -path "$2/TurboGrafx16/" -Recurse -Force
+                              Remove-Item -Path "$2/TurboGrafx16/" -Recurse -Force
                             }
 function tvc_roms()         { param ( $1, $2 ) coppy "$1/tvc.rom" "$2/" }
 function vectrex_roms       { param ( $1, $2 )
@@ -864,7 +865,7 @@ function videopac_roms      { param ( $1, $2 )
                               }
                             }
 function zx8x_roms          { param ( $1, $2 ) download_url 'http://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/ZX8X/zx8x.rom' "$2/" | Out-Null }
-function zx_spectrum_roms   { param ( $1, $2 ) coppy (Get-ChildItem -Path "$1/spectrum.rom" -Recurse | Sort LastWriteTime -Descending | Select -First 1) "$2/" }
+function zx_spectrum_roms   { param ( $1, $2 ) coppy "$1/spectrum.rom" "$2/" }
 function bagman_roms        { param ( $1, $2 )
                               download_url 'http://github.com/Gehstock/Mist_FPGA/raw/master/Arcade_MiST/Bagman Hardware/meta/Super Bagman.mra' "$env:TEMP/" | Out-Null
                               process_mra "$env:TEMP/Super Bagman.mra" "$2"
@@ -1143,7 +1144,7 @@ function show_usage {
 
 # Parse commandline options
 for ( $i = 0; $i -lt $args.count; $i++ ) {
-  if ($args[$i] -eq '-d') { $SD_ROOT=$args[$i+1] }
+  if ($args[$i] -eq '-d') { $SD_ROOT=($args[$i+1] | replace-slash) }
   if ($args[$i] -eq '-s') { $SYSTEM=$args[$i+1].ToLower()
                             if (($SYSTEM -ne 'sidi') -and ($SYSTEM -ne 'mist')) {
                               Write-Host -ForegroundColor red "Invalid target `'$SYSTEM`'!"

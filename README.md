@@ -6,7 +6,10 @@ There are seperate scripts for [Linux](Linux) and [Windows](Windows) hosts.
 
 ## Preconditions
 The SD card must be
+- at least 32GB
 - formatted (FAT, FAT32 or exFAT)
+
+or use a folder on HDD with the same available disk space
 
 ## Usage
 simply call the script with minor parameters:
@@ -40,6 +43,10 @@ option|description|example
 - Initialize SD card for MiST, create in subfolder (Linux)
 	```
 	genSD.sh -s mist
+	```
+- called without parameters: Initialize a subfolder for SiDi (Linux)
+	```
+	genSD.sh
 	```
 
 ## What is created
@@ -106,6 +113,28 @@ During installation, several temporary folders are created in the folder of the 
 ```
 It is a good idea to keep these folders as the next run will be much faster (git only needs to be updated and not cloned, the download of the MAME ROMs can be skipped, ...). This saves more than 10GB of data not being fetched again.
 
+## Testing
+There are initial [test scripts](test) to be executed with Linux and Windows. \
+Threse scripts will 
+- do some script checking
+- generate a destination set for
+   - mist
+   - sidi
+
+	with 2 runs:
+   - 1st: run with empty cache (=initial run)
+   - 2nd: run with cache and SD (=update run)
+
+Both folders should contain same content at the end (assuning no git update of any source repo in between). \
+Additionally, a full log for each set is created in the 'SD#' folder with some summary at the end:
+- Missing core .rbf files
+- Missing MAME ROMs
+- MAME ROMs with wrong checksum
+- MAME ROMs with missing parts
+
+Additionally it is always a good idea to compare the Linux and Windows generated sets and logs. \
+Please keep in mind that each test execution will consume about 40GB of HDD space.
+
 ## Known issues
 - **exFAT and DOS attributes (Linux version only)** \
   MiST and SiDi read FAT, FAT32 or exFAT (since [firmware_210525](https://github.com/mist-devel/mist-firmware/commit/56a1a0888f2448e6d1b5cf705d106a648709aff7)) fomatted SD cards. \
@@ -130,8 +159,8 @@ It is a good idea to keep these folders as the next run will be much faster (git
   Generating a setup with optimal settings for each core would be a nice additional feature for this script. \
   Will hopefully be introduced in the future.
 - **MiSTer support** \
-  Will need to check the typical MiSTer setup and align with this script. \
-  Target systems of this script are MiST and SiDi (much cheaper than MiSTer).
+  Need to check the typical **MiSTer** setup and align with this script. \
+  Target systems of this script are **MiST** and **SiDi** (much cheaper than MiSTer).
 
 And: It would be nice if all cores will be built for both MiST and SiDi as the hardware features are nearly identical.
 
