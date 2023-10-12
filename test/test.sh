@@ -21,10 +21,11 @@ if [ $avail -lt 40000000 ]; then
 fi
 
 for s in mist sidi; do
+  #if [ $s = 'sidi' ]; then continue; fi
   dstSys=$(dirname "${BASH_SOURCE[0]}")/Linux/$s
-  echo -e "\n----------------------------------------------------------------------"
-  echo -e "Test for '$s' -> '$dstSys':"
-  echo -e "----------------------------------------------------------------------\n"
+  echo -e "\n----------------------------------------------------------------------" \
+          "\nTest for '$s' -> '$dstSys':" \
+          "\n----------------------------------------------------------------------\n"
 
   # create empty folder for destination system with copy of script
   rm -rf "$dstSys"
@@ -42,26 +43,32 @@ for s in mist sidi; do
     if [ $i -ne 1 ]; then
       # use initially created folder content for re-run
       echo -e "\n\nCreating copy of '$dstSys/SD1' for update test ..."
-      #cp -pr "$dstSys/SD1/"* "$dstSD/"
+      cp -pr "$dstSys/SD1/"* "$dstSD/"
     fi
 
-    ansifilter='s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g' # https://unix.stackexchange.com/questions/111899/how-to-strip-color-codes-out-of-stdout-and-pipe-to-file-and-stdout
+    echo -e "\n----------------------------------------------------------------------" \
+            "\nResult for '$s' -> '$dstSD'" \
+            "\n----------------------------------------------------------------------\n"
 
-    echo 'y' | (time "$dstSys/genSD.sh" -s $s -d "$dstSD" 2>&1) | tee >(sed -ru $ansifilter >"$dstSD/log.txt")
+    # https://unix.stackexchange.com/questions/111899/how-to-strip-color-codes-out-of-stdout-and-pipe-to-file-and-stdout
+    ansifilter='s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g'
+
+    # generate content to destination SD folder
+    echo 'y' | (time "$dstSys/genSD.sh" -s $s -d "$dstSD" 2>&1)                              | sed -ru $ansifilter | tee "$dstSD/log.txt"
 
     # log error/warning results
-    echo -e -n "\n\n\e[1mMissing core .rbf files:\n\e[1;31m"                | sed -r $ansifilter | tee -a "$dstSD/log.txt"
-    (grep -i 'rbf\" not found' "$dstSD/log.txt" | sort | uniq)              | sed -r $ansifilter | tee -a "$dstSD/log.txt"
+    echo -e -n "\n\n\e[1mMissing core .rbf files:\n\e[1;31m"                                 | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+    (grep -i 'rbf\" not found' "$dstSD/log.txt" | sort | uniq)                               | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
 
-    echo -e -n "\n\n\e[1mMissing MAME ROMs:\n\e[1;31m"                      | sed -r $ansifilter | tee -a "$dstSD/log.txt"
-    (grep -i 'zip file not found' "$dstSD/log.txt" | sort | uniq)           | sed -r $ansifilter | tee -a "$dstSD/log.txt"
+    echo -e -n "\n\n\e[1mMissing MAME ROMs:\n\e[1;31m"                                       | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+    (grep -i 'zip file not found' "$dstSD/log.txt" | sort | uniq)                            | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
 
-    echo -e -n "\n\n\e[0;1mMAME ROMs with wrong checksum:\n\e[1;31m"        | sed -r $ansifilter | tee -a "$dstSD/log.txt"
-    (grep -i -B 1 --no-group-separator 'md5 mismatch' "$dstSD/log.txt")     | sed -r $ansifilter | tee -a "$dstSD/log.txt"
+    echo -e -n "\n\n\e[0;1mMAME ROMs with wrong checksum:\n\e[1;31m"                         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+    (grep -i -B 1 --no-group-separator 'md5 mismatch' "$dstSD/log.txt" | awk '!x[$0]++')     | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
 
-    echo -e -n "\n\n\e[0;1mMAME ROMs with missing parts:\n\e[1;31m"         | sed -r $ansifilter | tee -a "$dstSD/log.txt"
-    (grep -i -B 1 --no-group-separator 'not found in zip' "$dstSD/log.txt") | sed -r $ansifilter | tee -a "$dstSD/log.txt"
+    echo -e -n "\n\n\e[0;1mMAME ROMs with missing parts:\n\e[1;31m"                          | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+    (grep -i -B 1 --no-group-separator 'not found in zip' "$dstSD/log.txt" | awk '!x[$0]++') | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
   done
-  echo -e -n "\n\n\e[1mDiff of $dstSys/SD1 <-> $dstSys/SD2:\n\e[1;31m"      | sed -r $ansifilter | tee -a "$dstSD/log.txt"
-  diff -qr "$dstSys/SD1/" "$dstSys/SD2/"
+  echo -e -n "\n\n\e[1mDiff of $dstSys/SD1 <-> $dstSys/SD2:\n\e[1;31m"                       | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+  diff -qr "$dstSys/SD1/" "$dstSys/SD2/"                                                     | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
 done
