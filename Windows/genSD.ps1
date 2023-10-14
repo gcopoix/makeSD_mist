@@ -256,6 +256,7 @@ function download_mame_roms {
 
   # referred by -mra files: 251, 245, 240, 229, 224, 222, 220, 218, 193
   $mameurls=@(
+   #( mame-version, 'base url (will be extended by .zip name)'                                                       ),
    #( 0185, 'http://archive.org/download/MAME_0.185_ROMs_merged/MAME_0.185_ROMs_merged.zip/MAME 0.185 ROMs (merged)' ),
    #( 0193, 'http://archive.org/download/MAME0.193RomCollectionByGhostware'                                          ),
    #( 0193, 'http://archive.org/download/MAME_0.193_ROMs_merged/MAME_0.193_ROMs_merged.zip/MAME 0.193 ROMs (merged)' ),
@@ -1005,6 +1006,9 @@ function copy_mist_cores {
   # get MiST binary repository
   clone_or_update_git 'http://github.com/mist-devel/mist-binaries.git' $srcroot
 
+  # default ini file (it not exists)
+  if (-not (Test-Path "$dstroot/mist.ini")) { coppy "$srcroot/cores/mist.ini" "$dstroot/" }
+
   # Firmware upgrade file
   coppy "$srcroot/firmware/firmware*.upg" "$dstroot/firmware.upg"
 
@@ -1053,6 +1057,9 @@ function copy_sidi_cores {
 
   # get SiDi binary repository
   clone_or_update_git 'http://github.com/ManuFerHi/SiDi-FPGA.git' $srcroot
+
+  # default ini file (it not exists)
+  if (-not (Test-Path "$dstroot/mist.ini")) { download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/mist.ini' "$dstroot/" }
 
   # Firmware upgrade file
   coppy "$srcroot/Firmware/firmware*.upg" "$dstroot/firmware.upg"

@@ -68,6 +68,14 @@ for s in mist sidi; do
 
     echo -e -n "\n\n\e[0;1mMAME ROMs with missing parts:\n\e[1;31m"                          | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
     (grep -i -B 1 --no-group-separator 'not found in zip' "$dstSD/log.txt" | awk '!x[$0]++') | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+
+    # some statistics
+    echo -e -n "\n\n\e[0;1mNumber of .rbf files\e[0m:" \
+               "$(find $dstSD -name '*.rbf' -printf '%f\n' | sort | uniq | wc -l)\n"         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+    echo -e -n "\e[0;1mNumber of .arc files\e[0m:" \
+               "$(find $dstSD -name '*.arc' -printf '%f\n' | sort | uniq | wc -l)\n"         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+    echo -e -n "\e[0;1mNumber of .rom files\e[0m:" \
+               "$(find $dstSD -name '*.rom' -printf '%f\n' | sort | uniq | wc -l)\n"         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
   done
   echo -e -n "\n\n\e[1mDiff of $dstSys/SD1 <-> $dstSys/SD2:\n\e[1;31m"                       | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
   diff -qr "$dstSys/SD1/" "$dstSys/SD2/"                                                     | sed -ru $ansifilter | tee -a "$dstSD/log.txt"

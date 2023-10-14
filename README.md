@@ -7,6 +7,16 @@ There are seperate scripts for [Linux](Linux) and [Windows](Windows) hosts.
 This script only collects the work of many other contributors (FPGA, Hardware, Software, ...) to generate a 'distribution' for the systems mentioned above. \
 Thanks to all these contributors for their work (see [links to repositories](#Links) for only some of them).
 
+After executing this script appr.
+
+| |MiST|SiDi|
+|---|---|---|
+|.rbf|~230|~200|
+|.arc|~1100|~900|
+|.rom|~1150|~930|
+
+files are collected/generated.
+
 ## Preconditions
 The SD card must be
 - at least 32GB
@@ -57,6 +67,7 @@ This script fills/updates an SD card or folder with
 - the Computer/Console/Arcade Cores (organized in subfolders)
 - the required ROMs and optional sample Game/HDD files
 - ARM Firmware update file
+- default mist.ini
 
 to get an SD card which can be directly plugged into **MiST** or **SiDi**.
 
@@ -97,16 +108,14 @@ The generated folder structure:
 └── firmware.upg  # latest ARM firmware update file
 ```
 The Arcade cores are installed with their required ROM files. \
-The information about the Arcade cores/roms is parsed from the `.mra` files (e.g. for [jotego's cores](https://github.com/jotego/jtbin/tree/master/mra)). \
-The `genSD` script tries to download the Arcade ROMs from a [set of URLs](Linux/genSD.sh#L197-L230) together with their MAME version. As not all .mra files seem to refere the correct MAME version, only a set of versions is currently enabled which will deliver the best matching ROMs. \
-Not a perfect solution, but working quiet good for now (see [Known Issues](#known-issues))
+The information about the Arcade cores/roms is parsed from the `.mra` files (e.g. for [jotego's cores](https://github.com/jotego/jtbin/tree/master/mra)) and converted to `.arc` files together with the converted `.rom` file.
 
 ### Cache folders
 During installation, several temporary folders are created in the folder of the `genSD` script:
 ```
 ├── repos
 │   ├── jotego           # Jotego repository
-│   ├── mame             # cache folder for Arcade ROM files
+│   ├── mame             # cache folder for MAME Arcade ROM files
 │   ├── MiST
 │   │   ├── binaries     # MiST core repository
 │   │   ├── gehstock     # Gehstock MiST core repository
@@ -137,6 +146,7 @@ Additionally, a full log for each set is created in the 'SD#' folder with some s
 - Missing MAME ROMs
 - MAME ROMs with wrong checksum
 - MAME ROMs with missing parts
+- some statistics about the number of .rbf, .arc and .rom files
 
 Additionally it is always a good idea to compare the Linux and Windows generated sets and logs. \
 Please keep in mind that each test execution will consume about 40GB of HDD space - not talking about the test run time (several hours)
@@ -150,11 +160,11 @@ Please keep in mind that each test execution will consume about 40GB of HDD spac
   If the Linux script detects a non-FAT/FAT32 filesystem, it asks to continue as the folder attributes can't be set correctly. \
   The windows Powershell script doesn't have this issue.
 - **.mra parsing of ROM files** \
-  The ROM file names parsed from the `.mra` files refere a MAME version. \
-  Unfortunetly many ROMS fetched from the referred MAME version don't match, so I tried to find a best matching download strategy incl. some [extra handling](Linux/genSD.sh#L232-L249), but still some ROM files complain about checksum mismatch or missing parts. \
-  ROMs not found: \
+  The ROM file names parsed from the `.mra` files refer a MAME version. \
+  Unfortunetly many ROMS, if fetched from their referred MAME version, don't match. I tried to find a best matching [set of download URLs](Linux/genSD.sh#L197-L231) incl. some [extra handling](Linux/genSD.sh#L233-L251), but for some ROM archives `mra` still complains about checksum mismatch or missing parts: \
+  **ROMs not found**: \
   `mikiek.zip`, `rastsagaabl.zip` \
-  ROMs found, but with MD5 mismatch or missing parts: \
+  **ROMs found, but with MD5 mismatch or missing parts**: \
   `journey.rom`, `sxevious.rom`, `xevious.rom`, `clubpacm.rom`, `combh.rom`, `wbml.rom`, `lottofun.rom`, `spdball.rom`, `topgunbl.rom` \
   Any support here is appreciated.
 - **ROMs #2** \
@@ -164,17 +174,21 @@ Please keep in mind that each test execution will consume about 40GB of HDD spac
   Many cores require special files and folders in the root of the SD-Card for their ROM/Game/... files. This makes in my opinion the folder structure a bit messy, especially if we want to have a full core distribution. \
   I would recommend the default root folder of a running core is by default the folder of the core, what would make a modular setup of the SD card much easier. \
   May be somebody (or I myself) finds the time to introduce this feature in the [ARM firmware](http://github.com/mist-devel/mist-firmware).
-- **no mist.ini** \
-  Currently the script doesn't create/update [mist.ini](http://github.com/mist-devel/mist-board/wiki/DocIni) file. \
-  Generating a setup with optimal settings for each core would be a nice additional feature for this script.
+- **mist.ini** \
+  Currently the script simply uses the default [mist.ini](https://github.com/mist-devel/mist-binaries/blob/master/cores/mist.ini) from the main repository. \
+  Generating a configuration with [optimal settings](http://github.com/mist-devel/mist-board/wiki/DocIni) for each core would be a nice additional feature for this script. \
+  Jotego provides a [mist.ini](https://github.com/jotego/jtbin/blob/master/arc/mist.ini) extension for his cores.
 - **Missing Jotego Cores** \
-  Some .mra files in the Jotego repository refer missing .rbf files in the [mist](https://github.com/jotego/jtbin/tree/master/mist) or [sidi](https://github.com/jotego/jtbin/tree/master/sidi) folders. \
-  I've openend an [issue](https://github.com/jotego/jtbin/issues/345) for that.
+  Some .mra files in the Jotego repository refer missing .rbf files in the [mist](https://github.com/jotego/jtbin/tree/master/mist) or [sidi](https://github.com/jotego/jtbin/tree/master/sidi) folders (->[issue](https://github.com/jotego/jtbin/issues/345)): \
+   - `jtaliens.rbf`, `jtsimson.rbf`, `jttmnt.rbf`, `jttwin16.rbf`: \
+      in jotego beta phase, only available via Patreon/GitHub sponsors
+   - `jtoutrun.rbf`, `jtkiwi.rbf`: \
+     not enough ressources with MiST/SiDi
 - **MiSTer support** \
   Need to check the typical **MiSTer** setup and align with this script. \
   Target systems of this script are **MiST** and **SiDi** (much cheaper than MiSTer).
 
-And: It would be nice if all cores would be built for both **MiST** and **SiDi** as the hardware features are nearly identical \
+It would be nice if all cores would be built for both **MiST** and **SiDi** as the hardware features are nearly identical \
 (Thanks to Jotego for his Arcade repository with all releases for multiple FPGA platforms)
 
 ## Links
@@ -197,5 +211,7 @@ And: It would be nice if all cores would be built for both **MiST** and **SiDi**
 ### General repositories
 - [Jose Tejada (jotego) Arcade cores](http://github.com/jotego/jtbin.git)
 - [Gyurco's repositories](https://github.com/gyurco)
+- [Somhi's repositories](https://github.com/somhi)
+- [Alastair M. Robinson's repositories](https://github.com/robinsonb5)
 - [Sebastien Delestaing's repositories](https://github.com/sebdel)
-- [fixed mra tool](http://github.com/gcopoix/mra-tools-c/tree/fix/windows_crash/release) - ([merged](https://github.com/mist-devel/mra-tools-c/commit/1b62e9499860e8e09c171d9b5ff468324c4b480a) 2023-10-10 to [mist-devel/mra-tools-c](https://github.com/mist-devel/mra-tools-c) repository)
+- [fixed mra tool](http://github.com/gcopoix/mra-tools-c/tree/fix/windows_crash/release) - (now [merged](https://github.com/mist-devel/mra-tools-c/commit/1b62e9499860e8e09c171d9b5ff468324c4b480a) to [mist-devel/mra-tools-c](https://github.com/mist-devel/mra-tools-c) repository)

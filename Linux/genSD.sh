@@ -195,6 +195,7 @@ download_mame_roms() {
 
   # referred by -mra files: 251, 245, 240, 229, 224, 222, 220, 218, 193
   local mameurls=(
+   #"( 'mame-version' 'base url (will be extended by .zip name)'                                                       )"
    #"( '0185' 'http://archive.org/download/MAME_0.185_ROMs_merged/MAME_0.185_ROMs_merged.zip/MAME 0.185 ROMs (merged)' )"
    #"( '0193' 'http://archive.org/download/MAME0.193RomCollectionByGhostware'                                          )"
    #"( '0193' 'http://archive.org/download/MAME_0.193_ROMs_merged/MAME_0.193_ROMs_merged.zip/MAME 0.193 ROMs (merged)' )"
@@ -940,14 +941,17 @@ cores=(
 copy_mist_cores() {
   local dstroot=$1 # $1: destination folder
 
-  echo -e "\n----------------------------------------------------------------------"
-  echo -e "Copy MiST Cores to '$dstroot'"
-  echo -e "----------------------------------------------------------------------\n"
+  echo -e "\n----------------------------------------------------------------------" \
+          "\nCopy MiST Cores to '$dstroot'" \
+          "\n----------------------------------------------------------------------\n"
 
   local srcroot=$GIT_ROOT/MiST/binaries
 
   # get MiST binary repository
   clone_or_update_git 'http://github.com/mist-devel/mist-binaries.git' "$srcroot"
+
+  # default ini file (it not exists)
+  [ -f "$dstroot/mist.ini" ] || copy "$srcroot/cores/mist.ini" "$dstroot/"
 
   # Firmware upgrade file
   cp -pu "$srcroot/firmware/firmware"*.upg "$dstroot/firmware.upg"
@@ -1002,6 +1006,9 @@ copy_sidi_cores() {
 
   # get SiDi binary repository
   clone_or_update_git 'http://github.com/ManuFerHi/SiDi-FPGA.git' "$srcroot"
+
+  # default ini file (it not exists)
+  [ -f "$dstroot/mist.ini" ] || download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/mist.ini' "$dstroot/"
 
   # Firmware upgrade file
   copy "$srcroot/Firmware/firmware"*.upg "$dstroot/firmware.upg"
