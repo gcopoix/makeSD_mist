@@ -12,9 +12,7 @@ PowerShell -ExecutionPolicy Bypass "$ErrorActionPreference = 'SilentlyContinue';
                                    "  Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force;" ^
                                    "}" ^
                                    "Import-Module PSScriptAnalyzer;" ^
-                                   "Invoke-ScriptAnalyzer \"%~dp0..\Windows\genSD.ps1\"" ^
-                                   "    -Severity Warning " ^
-                                   "    -ExcludeRule PSAvoidUsingWriteHost, PSReviewUnusedParameter, PSPossibleIncorrectComparisonWithNull, PSUseApprovedVerbs"
+                                   "Invoke-ScriptAnalyzer \"%~dp0..\Windows\genSD.ps1\" -Settings ..\.vscode\PSScriptAnalyzerSettings.psd1"
 
 rem Available disk space test
 for /f "usebackq tokens=3" %%s in (`dir /-c /-o /w "%~dp0"`) do set avail=%%s
@@ -24,18 +22,23 @@ if %avail% LSS 40 (
   exit /b 1
 )
 
+rem create empty folder for test
+set dstRoot=%~dp0Windows
+rmdir /Q /S "!dstRoot!" 2>nul
+mkdir "%dstRoot%"
+copy "%~dp0..\Windows\genSD.ps1" "%dstRoot%\" >nul
+
 for %%s in (mist sidi) do (
-  set dstSys=%~dp0Windows\%%s
+  set dstSys=%dstRoot%\ps1\%%s
   echo.
   echo ----------------------------------------------------------------------
   echo Test for %%s -^> '!dstSys!':
   echo ----------------------------------------------------------------------
   echo.
 
-  rem create empty folder for destination system with copy of script
+  rem create empty folder for destination system
   rmdir /Q /S "!dstSys!" 2>nul
   mkdir "!dstSys!" >nul 2>&1
-  copy "%~dp0..\Windows\genSD.ps1" "!dstSys!\" >nul
   rem make 2 runs: 1st with empty cache folders, 2nd with cache and destination folders available (update case)
   for %%i in (1 2) do (
     set dstSD=!dstSys!\SD%%i
@@ -50,8 +53,10 @@ for %%s in (mist sidi) do (
     )
     rem ToDo: loggings currently don't support -no-newline.
     rem https://stackoverflow.com/questions/1215260/how-to-redirect-the-output-of-a-powershell-to-a-file-during-its-execution
-    rem PowerShell -ExecutionPolicy Bypass "$ErrorActionPreference=\"SilentlyContinue\"; Stop-Transcript | out-null; $ErrorActionPreference=\"Continue\"; Start-Transcript -Path \"%~dp0Windows\%%s\SD%%i\log.txt\"; %~dp0Windows\%%s\genSD.ps1 -s %%s -d \"%~dp0Windows\%%s\SD%%i 2>&1 3>&1\"; Stop-Transcript"
-    PowerShell -ExecutionPolicy Bypass "&\"!dstSys!\genSD.ps1\" -s %%s -d \"!dstSD!\" 2>&1 3>&1 4>&1 5>&1 6>&1 | Tee-Object \"!dstSD!\log.txt\""
+    rem PowerShell -ExecutionPolicy Bypass "Start-Transcript -Path \"%dstRoot%\%%s\SD%%i\log.txt\";" ^
+    rem                                    "%dstRoot%\genSD.ps1 -s %%s -d \"%dstRoot%\%%s\SD%%i\" *>&1 | Tee-Object \"!dstSD!\log.txt\";" ^
+    rem                                    "Stop-Transcript"
+    PowerShell -ExecutionPolicy Bypass "&\"%dstRoot%\genSD.ps1\" -s %%s -d \"!dstSD!\" *>&1 | Tee-Object \"!dstSD!\log.txt\""
 
     rem log error/warning results
     PowerShell -ExecutionPolicy Bypass "Write-Host -ForegroundColor red \"`r`nMissing core .rbf files:\"                                                     | Tee-Object \"!dstSD!\log.txt\" -Append;" ^

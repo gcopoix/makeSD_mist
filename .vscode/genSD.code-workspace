@@ -1,0 +1,76 @@
+{
+	// https://code.visualstudio.com/docs/editor/workspaces
+	// https://code.visualstudio.com/docs/editor/multi-root-workspaces
+	// https://code.visualstudio.com/docs/editor/variables-reference
+
+	"folders": [
+		{
+			"path": ".."
+		},
+	],
+	// extensions.json section
+	"extensions": {
+		"recommendations": [
+			"rogalmic.bash-debug",  // bash debugger
+			"ms-vscode.powershell", // powershell debugger
+		],
+		"unwantedRecommendations": [
+		]
+	},
+	// settings.json section
+	"settings": {
+		"files.trimTrailingWhitespace": true,
+		"files.insertFinalNewline": true,
+		"files.trimFinalNewlines": true,
+		"powershell.codeFormatting.autoCorrectAliases": true,
+		"powershell.scriptAnalysis.enable": true,
+		"powershell.scriptAnalysis.settingsPath": ".vscode/PSScriptAnalyzerSettings.psd1",
+		"powershell.developer.waitForSessionFileTimeoutSeconds": 1000,
+	},
+	// tasks.json section
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+		],
+	},
+	// launch.json section
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Launch Bash genSD.sh",
+				"type": "bashdb",
+				"request": "launch",
+				"program": "${workspaceFolder}/Linux/genSD.sh",
+				"cwd": "${workspaceFolder}",
+				"args": [
+					"-s", "${input:fpga}",
+					"-d", "${workspaceFolder}/Linux/SD/${input:fpga}",
+				],
+				"terminalKind": "integrated",
+			},
+			{
+				"name": "Launch PowerShell genSD.ps1",
+				"type": "PowerShell",
+				"request": "launch",
+				"script": "${workspaceFolder}/Windows/genSD.ps1",
+				"cwd": "${cwd}",
+				"args": [
+					"-s", "${input:fpga}",
+					"-d", "${workspaceFolder}/Windows/SD/${input:fpga}",
+				],
+			},
+		],
+		"inputs": [
+			{
+				"type": "pickString",
+				"id": "fpga",
+				"description": "What target FPGA system distribution do you want to create?",
+				"options": [
+				  "MiST",
+				  "SiDi",
+				],
+			}
+		]
+	},
+}

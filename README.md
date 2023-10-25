@@ -2,7 +2,8 @@
 
 This script initializes or updates the SD cards for either a [MiST](https://github.com/mist-devel/mist-board/wiki) or [SiDi](https://github.com/ManuFerHi/SiDi-FPGA/wiki) FPGA retro system. \
 It tries to create a complete as possible collection of cores and their required ROM files to get an out-of-the-box working SD card. \
-There are seperate scripts for [Linux](Linux) and [Windows](Windows) hosts.
+There are seperate scripts for [Linux](Linux) and [Windows](Windows) hosts. \
+With PowerShell [installed](https://learn.microsoft.com/de-de/powershell/scripting/install/installing-powershell-on-linux) on a Linux system the Windows [genSD.ps1](Windows/genSD.ps1) script is executable on a Linux system too.
 
 This script only collects the work of many other contributors (FPGA, Hardware, Software, ...) to generate a 'distribution' for the systems mentioned above. \
 Thanks to all these contributors for their work (see [links to repositories](#Links) for only some of them).
@@ -128,6 +129,16 @@ During installation, several temporary folders are created in the folder of the 
 It is a good idea to keep these folders as the next run will be much faster (git only needs to be updated and not cloned, the download of the MAME ROMs can be skipped, ...). \
 This saves more than 10GB of data not being fetched again.
 
+## Developing
+The [.vscode](.vscode) folder provides a workspace file for [Visual Studio Code](https://code.visualstudio.com) with pre-configured
+
+- plugin recommendations
+   - Bash Debugger
+   - PowerShell Debugger
+- script debug environment
+
+A [configuration](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) file for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test](test/test.bat#L15) script
+
 ## Testing
 There are initial [test scripts](test) to be executed with Linux and Windows. \
 Threse scripts will
@@ -149,7 +160,9 @@ Additionally, a full log for each set is created in the 'SD#' folder with some s
 - some statistics about the number of .rbf, .arc and .rom files
 
 Additionally it is always a good idea to compare the Linux and Windows generated sets and logs. \
-Please keep in mind that each test execution will consume about 40GB of HDD space - not talking about the test run time (several hours)
+Please keep in mind that each test execution will consume about 40GB of HDD space (the Linux version more as it will test the PowerShell script too) - not talking about the test run time (several hours)
+
+For testing specific cores, please refere some [test code](Linux/genSD.sh#L1207-1212) left disabled in the scripts.
 
 ## Known issues
 - **exFAT and DOS attributes (Linux version only)** \
