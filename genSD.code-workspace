@@ -5,14 +5,14 @@
 
 	"folders": [
 		{
-			"path": ".."
+			"path": "."
 		},
 	],
 	// extensions.json section
 	"extensions": {
 		"recommendations": [
 			"rogalmic.bash-debug",  // bash debugger
-			"ms-vscode.powershell", // powershell debugger
+			"ms-vscode.powershell", // powershell support
 		],
 		"unwantedRecommendations": [
 		]

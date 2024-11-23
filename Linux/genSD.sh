@@ -3,30 +3,30 @@
 # -- genSD.sh
 #    Generates or updates the folder structure for using in SiDi or MiST FPGA system.
 #    Picked cores:
-#    - SiDi repository (http://github.com/ManuFerHi/SiDi-FPGA.git)
-#    - MiST repository (http://github.com/mist-devel/mist-binaries.git)
-#    - Marcel Gehstock MiST repository (http://github.com/Gehstock/Mist_FPGA_Cores.git)
-#    - Alexey Melnikov (sorgelig) MiST repositories (http://github.com/sorgelig/<...>.git)
-#    - Jozsef Laszlo MiST cores (http://joco.homeserver.hu/fpga)
-#    - Nino Porcino (nippur72) cores (http://github.com/nippur72)
-#    - Petr (PetrM1) cores (http://github.com/PetrM1)
-#    - Jose Tejada (jotego) MiST/SiDi Arcade repository (http://github.com/jotego/jtbin.git)
-#    - eubrunosilva SiDi repositoriy (http://github.com/eubrunosilva/SiDi.git)
+#    - SiDi repository (https://github.com/ManuFerHi/SiDi-FPGA.git)
+#    - MiST repository (https://github.com/mist-devel/mist-binaries.git)
+#    - Marcel Gehstock MiST repository (https://github.com/Gehstock/Mist_FPGA_Cores.git)
+#    - Alexey Melnikov (sorgelig) MiST repositories (https://github.com/sorgelig/<...>.git)
+#    - Jozsef Laszlo MiST cores (https://joco.homeserver.hu/fpga)
+#    - Nino Porcino (nippur72) cores (https://github.com/nippur72)
+#    - Petr (PetrM1) cores (https://github.com/PetrM1)
+#    - Jose Tejada (jotego) MiST/SiDi Arcade repository (https://github.com/jotego/jtbin.git)
+#    - eubrunosilva SiDi repositoriy (https://github.com/eubrunosilva/SiDi.git)
 #    Additionally the required MAME ROMs are fetched too to generate a working SD card.
 #
-#    SiDi wiki: http://github.com/ManuFerHi/SiDi-FPGA.git
-#    MiST wiki: http://github.com/mist-devel/mist-board/wiki
+#    SiDi wiki: https://github.com/ManuFerHi/SiDi-FPGA.git
+#    MiST wiki: https://github.com/mist-devel/mist-board/wiki
 #
 # other SD card creation/update scripts:
-#    http://github.com/mist-devel/mist-binaries/tree/master/starter_pack
-#    http://gist.github.com/squidrpi/4ce3ea61cbbfa3900e116f9565d45e74
-#    http://github.com/theypsilon/Update_All_MiSTer
+#    https://github.com/mist-devel/mist-binaries/tree/master/starter_pack
+#    https://gist.github.com/squidrpi/4ce3ea61cbbfa3900e116f9565d45e74
+#    https://github.com/theypsilon/Update_All_MiSTer
 #
 # MiSTer BIOS pack (sub-archives can be downloaded directly too)
-#    http://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip
+#    https://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip
 #
 # current MAME ROM archive:
-#    http://archive.org/download/mame-merged/mame-merged/
+#    https://archive.org/download/mame-merged/mame-merged/
 
 
 # cache folders for repositories and MAME ROMs
@@ -44,7 +44,7 @@ check_dependencies() {
   if ! which fatattr 1>/dev/null; then sudo apt install -y fatattr; fi
   if ! which git     1>/dev/null; then sudo apt install -y git;     fi
   if [ ! -x "$TOOLS_ROOT/mra" ]; then
-    download_url 'http://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/"
+    download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/"
     chmod +x "$TOOLS_ROOT/mra"
   fi
 }
@@ -73,7 +73,7 @@ clone_or_update_git() {
   fi
 
   # Set timestamps on git files to match repository commit dates
-  # see http://stackoverflow.com/questions/21735435/git-clone-changes-file-modification-time for details
+  # see https://stackoverflow.com/questions/21735435/git-clone-changes-file-modification-time for details
   local unixtime touchtime
   git -C "$dstpath/" ls-tree -r --name-only HEAD | while read f; do
     echo -e -n "\rsychronizing timestamps: \e[0K$f" >&2
@@ -99,19 +99,32 @@ set_hidden_attr() {
   fatattr +h "$1" 2>/dev/null
 }
 
+makedir() {
+  # $1: directory path
+  mkdir -p "$1"
+}
+
 sdcopy() {
   local src=$1 # $1: src file(s)
   local dst=$2 # $2: destination file | directory (will be created if it doesn't exist)
 
   if [ -f "$src" ]; then
     # create destination folder if it doesn't exist
-    if [ "${dst: -1}" = "/" ] && [ ! -d "$dst" ]; then
-      mkdir -p "$dst"
+    if [ "${dst: -1}" = "/" ]; then
+      makedir "$dst"
     else
-      mkdir -p "$(dirname "$dst")"
+      local parent=$(dirname "$dst")
+      makedir "$parent"
     fi
     # copy/update if source file is newer
     cp -pu "$src" "$dst"
+  elif [ -d "$src" ]; then
+    # create destination folder if it doesn't exist
+    if [ "${dst: -1}" = "/" ]; then
+      makedir "$dst"
+    fi
+    # copy/update if source file is newer
+    cp -pur "$src" "$dst"
   else
     echo -e "\e[1;31mCopy: '$src' not found.\e[0m"
   fi
@@ -124,9 +137,7 @@ expand() {
   echo -n -e "  extracting '$srcfile' ..."
   if [ -f "$srcfile" ]; then
     # create destination folder if it doesn't exist
-    if [ ! -d "$dstpath" ]; then
-      mkdir -p "$dstpath"
-    fi
+    makedir "$dstpath"
 
     case "$srcfile" in
       *.zip) if unzip -uoq "$srcfile" -d "$dstpath";        then echo " done."; else echo -e "\e[1;31m failed.\e[0m"; fi;;
@@ -146,8 +157,8 @@ download_url() {
 
   echo -n -e "  fetching '$url' ..."
   # create destination folder if it doesn't exist
-  if [ "${dst: -1}" = '/' ] && [ ! -d "$dst" ]; then
-    mkdir -p "$dst"
+  if [ "${dst: -1}" = '/' ]; then
+    makedir "$dst"
   fi
   if [ -d "$dst" ]; then
     local opt=-qNP
@@ -176,13 +187,14 @@ copy_latest_core() {
   local srcdir=$1  # $1: source directory
   local dstfile=$2 # $2: destination rbf file
   local pattern=$3 # $3: optional name pattern
+  local exclude=$4 # $4: optional exclude pattern
 
   echo "  '${srcdir//$GIT_ROOT\//}' -> '${dstfile//$(dirname "${BASH_SOURCE[0]}")\//}'"
-  shopt -s nocaseglob
-  local rbf=$(ls -t "$srcdir/"*$pattern*.rbf 2>/dev/null | head -1)
-  if [ -z $rbf ]; then rbf=$(ls -t "$srcdir/"*.rbf | head -1); fi
-  shopt -u nocaseglob
-  sdcopy "$rbf" "$dstfile"
+  local rbf=$(ls -1t "$srcdir/"*.rbf)
+  if [ ! -z "$pattern" ]; then rbf=$(echo "$rbf" | grep -i "$pattern"); fi
+  if [ ! -z "$exclude" ]; then rbf=$(echo "$rbf" | grep -v -i "$exclude"); fi
+
+  sdcopy "$(echo "$rbf" | head -1)" "$dstfile"
 }
 
 
@@ -193,59 +205,62 @@ download_mame_roms() {
 
   # referred by -mra files: 251, 245, 240, 229, 224, 222, 220, 218, 193
   local mameurls=(
-   #"( 'mame-version' 'base url (will be extended by .zip name)'                                                       )"
-   #"( '0185' 'http://archive.org/download/MAME_0.185_ROMs_merged/MAME_0.185_ROMs_merged.zip/MAME 0.185 ROMs (merged)' )"
-   #"( '0193' 'http://archive.org/download/MAME0.193RomCollectionByGhostware'                                          )"
-   #"( '0193' 'http://archive.org/download/MAME_0.193_ROMs_merged/MAME_0.193_ROMs_merged.zip/MAME 0.193 ROMs (merged)' )"
-   #"( '0197' 'http://archive.org/download/MAME_0.197_ROMs_merged/MAME_0.197_ROMs_merged.zip/MAME 0.197 ROMs (merged)' )"
-   #"( '0201' 'http://archive.org/download/MAME201_Merged/MAME 0.201 ROMs (merged)'                 )"
-   #"( '0202' 'http://archive.org/download/MAME_0.202_Software_List_ROMs_merged'                    )" # only update
-   #"( '0205' 'http://archive.org/download/mame205T7zMerged'                                        )"
-   #"( '0211' 'http://archive.org/download/MAME211RomsOnlyMerged'                                   )"
-   #"( '0212' 'http://archive.org/download/MAME212RomsOnlyMerged'                                   )"
-   #"( '0213' 'http://archive.org/download/MAME213RomsOnlyMerged'                                   )"
-   #"( '0214' 'http://archive.org/download/MAME214RomsOnlyMerged'                                   )"
-   #"( '0215' 'http://archive.org/download/MAME215RomsOnlyMerged'                                   )"
-    "( '0216' 'http://archive.org/download/MAME216RomsOnlyMerged'                                   )"
-    "( '0218' 'http://archive.org/download/MAME218RomsOnlyMerged/MAME 0.218 ROMs (merged).zip'      )"
-    "( '0220' 'http://archive.org/download/MAME220RomsOnlyMerged'                                   )"
-   #"( '0221' 'http://archive.org/download/MAME221RomsOnlyMerged'                                   )"
-   #"( '0221' 'http://archive.org/download/mame-0.221-roms-merged'                                  )"
-   #"( '0221' 'http://archive.org/download/mame_0.221_roms/mame_0.221_roms.zip'                     )"
-   #"( '0222' 'http://archive.org/download/MAME222RomsOnlyMerged'                                   )"
-   #"( '0223' 'http://archive.org/download/MAME223RomsOnlyMerged'                                   )"
-    "( '0224' 'http://archive.org/download/mame0.224'                                               )"
-    "( '0229' 'http://archive.org/download/mame.0229'                                               )" # for wbml.zip
-   #"( '0236' 'http://archive.org/download/mame-0.236-roms-split/MAME 0.236 ROMs (split)'           )"
-   #"( '0240' 'http://archive.org/download/mame.0240'                                               )"
-   #"( '0245' 'http://archive.org/download/mame.0245.revival'                                       )"
-   #"( '0251' 'http://archive.org/download/mame251'                                                 )"
-   #"( '0252' 'http://archive.org/download/mame-chds-roms-extras-complete/MAME 0.252 ROMs (merged)' )"
-   #"( '0254' 'http://archive.org/download/mame-chds-roms-extras-complete/MAME 0.254 ROMs (merged)' )"
-   #"( '0256' 'http://archive.org/download/mame-chds-roms-extras-complete/MAME 0.256 ROMs (merged)' )"
-    "( '0259' 'http://archive.org/download/mame-merged/mame-merged'                                 )"
-    "( '9999' 'http://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade'                   )"
-    "( '9999' 'http://downloads.retrostic.com/roms'                                                 )"
+   #"( 'mame-version' 'base url (incl. '/', will be extended by .zip name)'                                              )"
+   #"( '0185' 'https://archive.org/download/MAME_0.185_ROMs_merged/MAME_0.185_ROMs_merged.zip/MAME 0.185 ROMs (merged)/' )"
+   #"( '0193' 'https://archive.org/download/MAME0.193RomCollectionByGhostware/'                                          )"
+   #"( '0193' 'https://archive.org/download/MAME_0.193_ROMs_merged/MAME_0.193_ROMs_merged.zip/MAME 0.193 ROMs (merged)/' )"
+   #"( '0197' 'https://archive.org/download/MAME_0.197_ROMs_merged/MAME_0.197_ROMs_merged.zip/MAME 0.197 ROMs (merged)/' )"
+   #"( '0201' 'https://archive.org/download/MAME201_Merged/MAME 0.201 ROMs (merged)/'                 )"
+   #"( '0202' 'https://archive.org/download/MAME_0.202_Software_List_ROMs_merged/'                    )" # only update
+   #"( '0205' 'https://archive.org/download/mame205T7zMerged/'                                        )"
+   #"( '0211' 'https://archive.org/download/MAME211RomsOnlyMerged/'                                   )"
+   #"( '0212' 'https://archive.org/download/MAME212RomsOnlyMerged/'                                   )"
+   #"( '0213' 'https://archive.org/download/MAME213RomsOnlyMerged/'                                   )"
+   #"( '0214' 'https://archive.org/download/MAME214RomsOnlyMerged/'                                   )"
+   #"( '0215' 'https://archive.org/download/MAME215RomsOnlyMerged/'                                   )"
+    "( '0216' 'https://archive.org/download/MAME216RomsOnlyMerged/'                                   )"
+    "( '0218' 'https://archive.org/download/MAME218RomsOnlyMerged/MAME 0.218 ROMs (merged).zip/'      )"
+    "( '0220' 'https://archive.org/download/MAME220RomsOnlyMerged/'                                   )"
+   #"( '0221' 'https://archive.org/download/MAME221RomsOnlyMerged/'                                   )"
+   #"( '0221' 'https://archive.org/download/mame-0.221-roms-merged/'                                  )"
+   #"( '0221' 'https://archive.org/download/mame_0.221_roms/mame_0.221_roms.zip/'                     )"
+   #"( '0222' 'https://archive.org/download/MAME222RomsOnlyMerged/'                                   )"
+   #"( '0223' 'https://archive.org/download/MAME223RomsOnlyMerged/'                                   )"
+    "( '0224' 'https://archive.org/download/mame0.224/'                                               )"
+    "( '0229' 'https://archive.org/download/mame.0229/'                                               )" # for wbml.zip
+   #"( '0236' 'https://archive.org/download/mame-0.236-roms-split/MAME 0.236 ROMs (split)/'           )"
+   #"( '0240' 'https://archive.org/download/mame.0240/'                                               )"
+   #"( '0245' 'https://archive.org/download/mame.0245.revival/'                                       )"
+   #"( '0251' 'https://archive.org/download/mame251/'                                                 )"
+   #"( '0252' 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.252 ROMs (merged)/' )"
+   #"( '0254' 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.254 ROMs (merged)/' )"
+   #"( '0256' 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.256 ROMs (merged)/' )"
+    "( '0259' 'https://archive.org/download/mame-merged/mame-merged/'                                 )"
+    "( '0271' 'https://bda.retroroms.net/downloads/mame/mame-0271-full/'                              )"
+   #"( '9999' 'https://bda.retroroms.net/downloads/mame/currentroms/'                                 )"
+    "( '9999' 'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/'                   )"
+    "( '9999' 'https://downloads.retrostic.com/roms/'                                                 )"
+    "( '9999' 'https://www.doperoms.org/files/roms/mame/GETFILE_'                                     )" # without '/', archive.zip leads to 'GETFILE_archive.zip')
   )
-  # list of ROMs not downloadable from URLs/MAEM versions above, using dedicated download URLs
+  # list of ROMs not downloadable from URLs above, using dedicated download URLs
   local romlookup=(
-   #"( 'combh.zip'          'http://downloads.retrostic.com/roms/combatsc.zip'                                    )" #bad MD5
-   #"( 'clubpacm.zip'       'http://downloads.retrostic.com/roms/clubpacm.zip'                                    )" #bad MD5
-   #"( 'clubpacm.zip'       'http://archive.org/download/mame-merged/mame-merged/clubpacm.zip'                    )" #bad MD5
-   #"( 'journey.zip'        'http://archive.org/download/MAME216RomsOnlyMerged/journey.zip'                       )" #bad MD5
-   #"( 'journey.zip'        'http://downloads.retrostic.com/roms/journey.zip'                                     )" #bad MD5
-   #"( 's16mcu_alt.zip'     'http://misterfpga.org/download/file.php?id=3319'                                     )" #ok
-   #"( 'wbml.zip'           'http://archive.org/download/MAME224RomsOnlyMerged/wbml.zip'                          )" #bad MD5
-   #"( 'wbml.zip'           'http://downloads.retrostic.com/roms/wbml.zip'                                        )" #missing files
-   #"( 'wbml.zip'           'http://archive.org/download/mame.0229/wbml.zip'                                      )" #bad MD5
-   #"( 'xevious.zip'        'http://downloads.retrostic.com/roms/xevious.zip'                                     )" #bad MD5
-   #"( 'xevious.zip'        'http://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/xevious.zip'       )" #bad MD5
-   #"( 'xevious.zip'        'http://archive.org/download/MAME216RomsOnlyMerged/xevious.zip'                       )" #bad MD5
-   #"( 'xevious.zip'        'http://archive.org/download/mame-merged/mame-merged/xevious.zip'                     )" #bad MD5 & parts missing
-    "( 'roadfu.zip'         'http://archive.org/download/mame0.224/roadfu.zip'                                    )" #ok
-   #"( 'rastsagaabl.zip'    'http://bda.retroroms.info:82/downloads/mame/update-packs/mame-0240/rastsagaabl.zip'  )" #login required
-    "( 'zaxxon_samples.zip' 'http://www.arcadeathome.com/samples/zaxxon.zip'                                      )" #ok
-    "( 'jtbeta.zip'         'http://archive.org/download/jtkeybeta/beta.zip'                                      )" #ok, from http://twitter.com/jtkeygetterscr1/status/1403441761721012224?s=20&t=xvNJtLeBsEOr5rsDHRMZyw
+   #"( 'combh.zip'          'https://downloads.retrostic.com/roms/combatsc.zip'                                    )" #bad MD5
+   #"( 'clubpacm.zip'       'https://downloads.retrostic.com/roms/clubpacm.zip'                                    )" #bad MD5
+   #"( 'clubpacm.zip'       'https://archive.org/download/mame-merged/mame-merged/clubpacm.zip'                    )" #bad MD5
+   #"( 'journey.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/journey.zip'                       )" #bad MD5
+   #"( 'journey.zip'        'https://downloads.retrostic.com/roms/journey.zip'                                     )" #bad MD5
+   #"( 's16mcu_alt.zip'     'https://misterfpga.org/download/file.php?id=3319'                                     )" #ok
+   #"( 'wbml.zip'           'https://archive.org/download/MAME224RomsOnlyMerged/wbml.zip'                          )" #bad MD5
+   #"( 'wbml.zip'           'https://downloads.retrostic.com/roms/wbml.zip'                                        )" #missing files
+   #"( 'wbml.zip'           'https://archive.org/download/mame.0229/wbml.zip'                                      )" #bad MD5
+   #"( 'xevious.zip'        'https://downloads.retrostic.com/roms/xevious.zip'                                     )" #bad MD5
+   #"( 'xevious.zip'        'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/xevious.zip'       )" #bad MD5
+   #"( 'xevious.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/xevious.zip'                       )" #bad MD5
+   #"( 'xevious.zip'        'https://archive.org/download/mame-merged/mame-merged/xevious.zip'                     )" #bad MD5 & parts missing
+    "( 'roadfu.zip'         'https://archive.org/download/mame0.224/roadfu.zip'                                    )" #ok
+   #"( 'rastsagaabl.zip'    'https://bda.retroroms.info:82/downloads/mame/update-packs/mame-0240/rastsagaabl.zip'  )" #login required
+    "( 'zaxxon_samples.zip' 'https://www.arcadeathome.com/samples/zaxxon.zip'                                      )" #ok
+    "( 'jtbeta.zip'         'https://archive.org/download/jtkeybeta/beta.zip'                                      )" #ok, from https://twitter.com/jtkeygetterscr1/status/1403441761721012224?s=20&t=xvNJtLeBsEOr5rsDHRMZyw
   )
 
   if [ ${#zips[@]} -gt 0 ]; then
@@ -268,11 +283,16 @@ download_mame_roms() {
       for rlu in "${mameurls[@]}"; do
         eval "rlu=$rlu"
         if [ $ver -le ${rlu[0]} ]; then
-          if download_url "${rlu[1]}/$zip" "$dstroot/"; then
+          if download_url "${rlu[1]}$zip" "$dstroot/"; then
+            rlu=''
             break
           fi
         fi
       done
+      [ -z "$rlu" ] && continue
+
+      #3rd: try https://doperoms.org
+      #download_url "https://doperoms.org/files/roms/mame/GETFILE_$zip" "$dstroot/"
     done
   fi
 }
@@ -297,8 +317,8 @@ mra() {
     # https://github.com/mist-devel/mra-tools-c/blob/master/src/utils.c#L38
     setname=${setname//[ ()\[\]?.:]/'_'}
   fi
+  # trim setname if longer than 16 characters (take 1st 13 characters and last 3 characters (like rom filename trim of mra tool))
   local MAX_ROM_FILENAME_SIZE=16
-  # trim setname if longer than 8 characters (take 1st 5 characters and last 3 characters (like rom filename trim of mra tool))
   if [ ${#setname} -gt $MAX_ROM_FILENAME_SIZE ]; then
     setname=${setname::$((MAX_ROM_FILENAME_SIZE-3))}${setname: -3}
   fi
@@ -357,7 +377,7 @@ process_mra() {
   # grep list of zip files: 1st: encapsulated in ", 2nd: encapsulated in '
   local zps=$(grep -oP '(?<=zip=")[^"]+' "$mrafile")
   if [ -z "$zps" ]; then zps=$(grep -oP "(?<=zip=')[^']+" "$mrafile"); fi
-  eval "zips=(${zps//|/ })"
+  eval "local zips=(${zps//|/ })"
 
   echo -e "\n${mrafile//"$GIT_ROOT/"} ($name, $rbf, ${zips[*]} ($mamever)):"
   if [ -z "$mamever" ]; then
@@ -366,7 +386,7 @@ process_mra() {
   fi
 
   # create target folder and set system attribute for this subfolder to be visible in menu core
-  mkdir -p "$dstpath"
+  makedir "$dstpath"
   set_system_attr "$dstpath"
 
   # create temporary copy of .mra file with correct name
@@ -378,10 +398,10 @@ process_mra() {
   if [ ! -z "$rbfpath" ]; then
     # get correct core name
     rbfpath=${rbfpath//'/InWork'/}; rbfpath=${rbfpath//'/meta'/}
-    local srcrbf=$rbf
+    local rlu srcrbf=$rbf
     # lookup non-matching filenames <-> .rbf name references in .mra file
     for rlu in "${rbflookup[@]}"; do
-      eval "local rlu=$rlu"
+      eval "rlu=$rlu"
       if [ "${rlu[0]}" = "$name" ]; then
         srcrbf=${rlu[1]}
         break
@@ -449,7 +469,7 @@ copy_mra_arcade_cores() {
 
 
 copy_jotego_arcade_cores() {
-  local fpga=$1    # $1: target system ("mist", "sidi" of "mister")
+  local fpga=$1    # $1: target system ('mist' or 'sidi')
   local dstroot=$2 # $2: target folder
 
   echo -e "\n----------------------------------------------------------------------" \
@@ -458,18 +478,24 @@ copy_jotego_arcade_cores() {
 
   # some lookup to sort games into sub folder (if they don't support the <platform> tag)
   local jtlookup=(
-    "( 'CAPCOM'    'jt1942' 'jt1943' 'jtbiocom' 'jtbtiger' 'jtcommnd' 'jtexed'   'jtf1drm'  'jtgunsmk' 'jthige'
-                   'jtpang' 'jtrumble' 'jtsarms'  'jtsf'     'jtsectnz' 'jttrojan' 'jttora'   'jtvulgus' )"
-    "( 'CPS-2'     'jtcps2'  )"
-    "( 'CPS-15'    'jtcps15' )"
-    "( 'CPS-1'     'jtcps1'  )"
-    "( 'SEGA S16A' 'jts16'   )"
-    "( 'SEGA S16B' 'jts16b'  )"
+    "( 'CAPCOM'     'jt1942' 'jt1943' 'jtbiocom' 'jtbtiger' 'jtcommnd' 'jtexed'   'jtf1drm'  'jtgunsmk' 'jthige'
+                    'jtpang' 'jtrumble' 'jtsarms'  'jtsf'     'jtsectnz' 'jttrojan' 'jttora'   'jtvulgus' )"
+    "( 'CPS-2'      'jtcps2'  )"
+    "( 'CPS-15'     'jtcps15' )"
+    "( 'CPS-1'      'jtcps1'  )"
+    "( 'SEGA S16A'  'jts16'   )"
+    "( 'SEGA S16B'  'jts16b'  )"
+    "( 'TAITO TNZS' 'jtkiwi'  )"
   )
 
   # get jotego git
   local srcpath=$GIT_ROOT/jotego
-  clone_or_update_git 'http://github.com/jotego/jtbin.git' "$srcpath"
+  clone_or_update_git 'https://github.com/jotego/jtbin.git' "$srcpath"
+
+  # add cores from somhi repo (not yet part of jotego binaries)
+  local jtname=$([[ $fpga == 'mist' ]] && echo 'jtoutrun_MiST_230312' || echo 'jtoutrun_SiDi_20231108')
+  download_url "https://github.com/somhi/jtbin/raw/master/$fpga/$jtname.rbf" "$srcpath/$fpga/jtoutrun.rbf"
+  download_url "https://github.com/somhi/jtbin/raw/master/$fpga/jtkiwi.rbf"  "$srcpath/$fpga/"
 
   # ini file from jotego git
   #sdcopy "$srcpath/arc/mist.ini" "$dstroot/"
@@ -494,13 +520,13 @@ copy_gehstock_mist_cores() {
 
   # additional ROM/Game copy for some Gehstock cores
   local cores=(
-   #"( 'rbf name'         opt_romcoppy_fn  )"
-    "( 'AppleII.rbf'      apple2e_roms     )"
-    "( 'vectrex.rbf'      vectrex_roms     )"
+   #"( 'rbf name'         opt_romcopy_fn  )"
+    "( 'AppleII.rbf'      apple2e_roms    )"
+    "( 'vectrex.rbf'      vectrex_roms    )"
   )
   # get Gehstock git
   local srcroot="$GIT_ROOT/MiST/gehstock"
-  clone_or_update_git 'http://github.com/Gehstock/Mist_FPGA_Cores.git' "$srcroot"
+  clone_or_update_git 'https://github.com/Gehstock/Mist_FPGA_Cores.git' "$srcroot"
 
   # find all cores
   local saveIFS=$IFS
@@ -523,6 +549,7 @@ copy_gehstock_mist_cores() {
       name=$(basename "$rbf"); name=${name//'_MiST'/}
       echo -e "\n${rbf//$GIT_ROOT\//}:"
       sdcopy "$rbf" "$dst/$name"
+      set_system_attr "$dst"
       if [ ! -z "$(find "$dir" -iname '*.rom')" ]; then
         cp -pu "$dir/"*.rom "$dst/"
       fi
@@ -552,39 +579,41 @@ copy_sorgelig_mist_cores() {
 
   echo -e "\n----------------------------------------------------------------------" \
           "\nCopy Sorgelig/PetrM1/nippur72 Cores for 'mist' to '$dstroot'" \
-          "\n----------------------------------------------------------------------\n"
+          "\n----------------------------------------------------------------------"
 
   # additional cores from Alexey Melnikov's (sorgelig) repositories
   local cores=(
    #"( 'dst folder'                    'git url'                                   'core release folder' opt_romcoppy_fn  )"
-    "( 'Arcade/Sorgelig/Apogee'        'http://github.com/sorgelig/Apogee_MIST.git'           'release'  apogee_roms      )"
-    "( 'Arcade/Sorgelig/Galaga'        'http://github.com/sorgelig/Galaga_MIST.git'           'releases'                  )"
-    "( 'Computer/Vector-06'            'http://github.com/sorgelig/Vector06_MIST.git'         'releases'                  )"
-    "( 'Computer/Specialist'           'http://github.com/sorgelig/Specialist_MIST.git'       'release'                   )"
-    "( 'Computer/Phoenix'              'http://github.com/sorgelig/Phoenix_MIST.git'          'releases'                  )"
-    "( 'Computer/BK0011M'              'http://github.com/sorgelig/BK0011M_MIST.git'          'releases'                  )"
-    "( 'Computer/Ondra SPO 186'        'http://github.com/PetrM1/OndraSPO186_MiST.git'        'releases' ondra_roms       )"
-    "( 'Computer/Laser 500'            'http://github.com/nippur72/Laser500_MiST.git'         'releases' laser500_roms    )"
-    "( 'Computer/LM80C Color Computer' 'http://github.com/nippur72/LM80C_MiST.git'            'releases' lm80c_roms       )"
-    "( 'Computer/Apple 1'              'http://github.com/nippur72/Apple1_MiST.git'           'releases'                  )"
+    "( 'Arcade/Sorgelig/Apogee'        'https://github.com/sorgelig/Apogee_MIST.git'           'release'  apogee_roms      )"
+    "( 'Arcade/Sorgelig/Galaga'        'https://github.com/sorgelig/Galaga_MIST.git'           'releases'                  )"
+    "( 'Computer/Vector-06'            'https://github.com/sorgelig/Vector06_MIST.git'         'releases'                  )"
+    "( 'Computer/Specialist'           'https://github.com/sorgelig/Specialist_MIST.git'       'release'                   )"
+    "( 'Computer/Phoenix'              'https://github.com/sorgelig/Phoenix_MIST.git'          'releases'                  )"
+    "( 'Computer/BK0011M'              'https://github.com/sorgelig/BK0011M_MIST.git'          'releases'                  )"
+    "( 'Computer/Ondra SPO 186'        'https://github.com/PetrM1/OndraSPO186_MiST.git'        'releases' ondra_roms       )"
+    "( 'Computer/Laser 500'            'https://github.com/nippur72/Laser500_MiST.git'         'releases' laser500_roms    )"
+    "( 'Computer/LM80C Color Computer' 'https://github.com/nippur72/LM80C_MiST.git'            'releases' lm80c_roms       )"
    # no release yet for CreatiVision core
-   #"( 'Computer/CreatiVision'         'http://github.com/nippur72/CreatiVision_MiST.git'     'releases'                  )"
+   #"( 'Computer/CreatiVision'         'https://github.com/nippur72/CreatiVision_MiST.git'     'releases'                  )"
    # other Sorgelig repos are already part of MiST binaries repo
-   #"( 'Computer/ZX Spectrum 128k'     'http://github.com/sorgelig/ZX_Spectrum-128K_MIST.git' 'releases' zx_spectrum_roms )"
-   #"( 'Computer/Amstrad CPC 6128'     'http://github.com/sorgelig/Amstrad_MiST.git'          'releases' amstrad_roms     )"
-   #"( 'Computer/C64'                  'http://github.com/sorgelig/C64_MIST.git'              'releases' c64_roms         )"
-   #"( 'Computer/PET2001'              'http://github.com/sorgelig/PET2001_MIST.git'          'releases' pet2001_roms     )"
-   #"( 'Console/NES'                   'http://github.com/sorgelig/NES_MIST.git'              'releases' nes_roms         )"
-   #"( 'Computer/SAM Coupe'            'http://github.com/sorgelig/SAMCoupe_MIST.git'         'releases' samcoupe_roms    )"
-   #"( '.'                             'http://github.com/sorgelig/Menu_MIST.git'             'release'                   )"
+   #"( 'Computer/ZX Spectrum 128k'     'https://github.com/sorgelig/ZX_Spectrum-128K_MIST.git' 'releases' zx_spectrum_roms )"
+   #"( 'Computer/Amstrad CPC 6128'     'https://github.com/sorgelig/Amstrad_MiST.git'          'releases' amstrad_roms     )"
+   #"( 'Computer/C64'                  'https://github.com/sorgelig/C64_MIST.git'              'releases' c64_roms         )"
+   #"( 'Computer/PET2001'              'https://github.com/sorgelig/PET2001_MIST.git'          'releases' pet2001_roms     )"
+   #"( 'Console/NES'                   'https://github.com/sorgelig/NES_MIST.git'              'releases' nes_roms         )"
+   #"( 'Computer/SAM Coupe'            'https://github.com/sorgelig/SAMCoupe_MIST.git'         'releases' samcoupe_roms    )"
+   #"( '.'                             'https://github.com/sorgelig/Menu_MIST.git'             'release'                   )"
+   #"( 'Computer/Apple 1'              'https://github.com/nippur72/Apple1_MiST.git'           'releases'                  )"
   )
   local srcroot=$GIT_ROOT/MiST/sorgelig
   local item name
   for item in "${cores[@]}"; do
     eval "item=$item"
     name=$(basename ${item[1]::-9})
+    echo ''
     clone_or_update_git ${item[1]} "$srcroot/$name"
     copy_latest_core "$srcroot/$name/${item[2]}" "$dstroot/${item[0]}/$(basename "${item[0]}").rbf"
+    set_system_attr "$dstroot/${item[0]}"
     # optional rom handling
     if [ ! -z "${item[3]}" ]; then
       ${item[3]} "$srcroot/$name/${item[2]}" "$dstroot/${item[0]}"
@@ -596,14 +625,18 @@ copy_sorgelig_mist_cores() {
 copy_joco_mist_cores() {
   local dstroot=$1 # $1: target folder
 
-  # MiST Primo from http://joco.homeserver.hu/fpga/mist_primo_en.html
-  download_url 'http://joco.homeserver.hu/fpga/download/primo.rbf'       "$dstroot/Computer/Primo/"
-  download_url 'http://joco.homeserver.hu/fpga/download/primo.rom'       "$dstroot/Computer/Primo/"
-  download_url 'http://joco.homeserver.hu/fpga/download/pmf/astro.pmf'   "$dstroot/Computer/Primo/"
-  download_url 'http://joco.homeserver.hu/fpga/download/pmf/astrob.pmf'  "$dstroot/Computer/Primo/"
-  download_url 'http://joco.homeserver.hu/fpga/download/pmf/galaxy.pmf'  "$dstroot/Computer/Primo/"
-  download_url 'http://joco.homeserver.hu/fpga/download/pmf/invazio.pmf' "$dstroot/Computer/Primo/"
-  download_url 'http://joco.homeserver.hu/fpga/download/pmf/jetpac.pmf'  "$dstroot/Computer/Primo/"
+  echo -e "\n----------------------------------------------------------------------" \
+          "\nCopy Jozsef Laszlo (joco) Cores for 'mist' to '$dstroot'" \
+          "\n----------------------------------------------------------------------\n"
+
+  # MiST Primo from https://joco.homeserver.hu/fpga/mist_primo_en.html
+  download_url 'https://joco.homeserver.hu/fpga/download/primo.rbf'       "$dstroot/Computer/Primo/"
+  download_url 'https://joco.homeserver.hu/fpga/download/primo.rom'       "$dstroot/Computer/Primo/"
+  download_url 'https://joco.homeserver.hu/fpga/download/pmf/astro.pmf'   "$dstroot/Computer/Primo/"
+  download_url 'https://joco.homeserver.hu/fpga/download/pmf/astrob.pmf'  "$dstroot/Computer/Primo/"
+  download_url 'https://joco.homeserver.hu/fpga/download/pmf/galaxy.pmf'  "$dstroot/Computer/Primo/"
+  download_url 'https://joco.homeserver.hu/fpga/download/pmf/invazio.pmf' "$dstroot/Computer/Primo/"
+  download_url 'https://joco.homeserver.hu/fpga/download/pmf/jetpac.pmf'  "$dstroot/Computer/Primo/"
   set_system_attr "$dstroot/Computer/Primo"
   # other joco cores are already part of MiST binaries repo
 }
@@ -618,7 +651,7 @@ copy_eubrunosilva_sidi_cores() {
 
   # get eubrunosilva git
   local srcpath=$GIT_ROOT/SiDi/eubrunosilva
-  clone_or_update_git 'http://github.com/eubrunosilva/SiDi.git' "$srcpath"
+  clone_or_update_git 'https://github.com/eubrunosilva/SiDi.git' "$srcpath"
 
   # generate destination arcade folders from .mra and .core files
   copy_mra_arcade_cores "$srcpath/Arcade" "$srcpath/Arcade" "$dstroot/Arcade/eubrunosilva"
@@ -656,6 +689,7 @@ copy_eubrunosilva_sidi_cores() {
   for item in "${comp_cores[@]}"; do
     eval "item=$item"
     copy_latest_core "$srcpath/Computer" "$dstroot/${item[0]}/$(basename "${item[0]}").rbf" "${item[1]}"
+    set_system_attr "$dstroot/${item[0]}"
     # optional rom handling
     if [ ! -z "${item[2]}" ]; then
       ${item[2]} "$srcpath/Computer" "$dstroot/${item[0]}"
@@ -669,26 +703,30 @@ amiga_roms()           { sdcopy "$1/AROS.ROM" "$2/kick/aros.rom"
                          sdcopy "$1/HRTMON.ROM" "$SD_ROOT/hrtmon.rom"
                          sdcopy "$1/MinimigUtils.adf" "$2/adf/"
                          expand "$1/minimig_boot_art.zip" "$SD_ROOT/"
-                         download_url 'http://fsck.technology/software/Commodore/Amiga/Kickstart ROMs/Kickstart 3.1/Kickstart v3.1 rev 40.63 (1993)(Commodore)(A500-A600-A2000).rom' "$2/kick/"
-                         download_url 'http://fsck.technology/software/Commodore/Amiga/Kickstart ROMs/Kickstart 3.1/Kickstart v3.1 rev 40.70 (1993)(Commodore)(A4000).rom' "$2/kick/"
-                         download_url 'http://fsck.technology/software/Commodore/Amiga/Kickstart ROMs/Kickstart 3.1/Kickstart v3.1 rev 40.68 (1993)(Commodore)(A1200).rom' "$2/kick/"
+                         download_url 'https://archive.org/download/Older_Computer_Environments_and_Operating_Systems/Amiga.zip/Amiga/Amiga Kickstart Roms - Complete - TOSEC v0.04/KS-ROMs/Kickstart v1.3 rev 34.5 (1987)(Commodore)(A500-A1000-A2000-CDTV).rom' "$2/kick/"
+                         download_url 'https://archive.org/download/Older_Computer_Environments_and_Operating_Systems/Amiga.zip/Amiga/Amiga Kickstart Roms - Complete - TOSEC v0.04/KS-ROMs/Kickstart v2.04 rev 37.175 (1991)(Commodore)(A500%2B).rom' "$2/kick/"
+                         download_url 'https://archive.org/download/Older_Computer_Environments_and_Operating_Systems/Amiga.zip/Amiga/Amiga Kickstart Roms - Complete - TOSEC v0.04/KS-ROMs/Kickstart v2.05 rev 37.300 (1991)(Commodore)(A600HD).rom' "$2/kick/"
+                         download_url 'https://archive.org/download/Older_Computer_Environments_and_Operating_Systems/Amiga.zip/Amiga/Amiga Kickstart Roms - Complete - TOSEC v0.04/KS-ROMs/Kickstart v3.1 rev 40.63 (1993)(Commodore)(A500-A600-A2000).rom' "$2/kick/"
+                         download_url 'https://archive.org/download/Older_Computer_Environments_and_Operating_Systems/Amiga.zip/Amiga/Amiga Kickstart Roms - Complete - TOSEC v0.04/KS-ROMs/Kickstart v3.1 rev 40.68 (1993)(Commodore)(A1200).rom' "$2/kick/"
+                         download_url 'https://archive.org/download/Older_Computer_Environments_and_Operating_Systems/Amiga.zip/Amiga/Amiga Kickstart Roms - Complete - TOSEC v0.04/KS-ROMs/Kickstart v3.1 rev 40.70 (1993)(Commodore)(A4000).rom' "$2/kick/"
                          sdcopy "$2/kick/Kickstart v3.1 rev 40.68 (1993)(Commodore)(A1200).rom" "$SD_ROOT/kick.rom"
-                         download_url 'http://fsck.technology/software/Commodore/Amiga/Workbench and AmigaOS/Amiga Workbench 3.1/Commodore/Workbench v3.1 rev 40.42 (1994)(Commodore)(M10)(Disk 1 of 6)(Install)[!].adf' "$2/adf/"
-                         download_url 'http://fsck.technology/software/Commodore/Amiga/Workbench and AmigaOS/Amiga Workbench 3.1/Commodore/Workbench v3.1 rev 40.42 (1994)(Commodore)(M10)(Disk 2 of 6)(Workbench)[!].adf' "$2/adf/"
-                         download_url 'http://download.freeroms.com/amiga_roms/t/turrican.zip' "$2/adf/"
-                         download_url 'http://download.freeroms.com/amiga_roms/t/turrican2.zip' "$2/adf/"
-                         download_url 'http://download.freeroms.com/amiga_roms/t/turrican3.zip' "$2/adf/"
-                         download_url 'http://download.freeroms.com/amiga_roms/a/agony.zip' "$2/adf/"
+                         download_url 'https://archive.org/download/commodore-amiga-operating-systems-workbench/Workbench v3.0 rev 39.29 (1992)(Commodore)(A1200-A4000)(M10)(Disk 1 of 6)(Install).zip' "$2/adf/"
+                         download_url 'https://archive.org/download/commodore-amiga-operating-systems-workbench/Workbench v3.0 rev 39.29 (1992)(Commodore)(A1200-A4000)(M10)(Disk 2 of 6)(Workbench).zip' "$2/adf/"
+                         download_url 'https://download.freeroms.com/amiga_roms/t/turrican.zip' "$2/adf/"
+                         download_url 'https://download.freeroms.com/amiga_roms/t/turrican2.zip' "$2/adf/"
+                         download_url 'https://download.freeroms.com/amiga_roms/t/turrican3.zip' "$2/adf/"
+                         download_url 'https://download.freeroms.com/amiga_roms/a/agony.zip' "$2/adf/"
+                         download_url 'https://archive.org/download/amigaromset/CommodoreAmigaRomset1.zip/MonkeyIsland2_v1.1_De_0077.hdf' "$2/hdf/"
                          expand "$2/adf/turrican.zip" "$2/adf/"
                          expand "$2/adf/turrican2.zip" "$2/adf/"
                          expand "$2/adf/turrican3.zip" "$2/adf/"
                          expand "$2/adf/agony.zip" "$2/adf/"
                        }
 amstrad_roms()         { if [ $SYSTEM = 'mist' ]; then cp -pu "$1/ROMs/"*.e* "$SD_ROOT/"; else cp -pu "$1/amstrad.rom" "$SD_ROOT/"; fi
-                         download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/amstrad/ROMs/AST-Equinox.dsk' "$2/roms/"
+                         download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/amstrad/ROMs/AST-Equinox.dsk' "$2/roms/"
                          sdcopy "$2/roms/AST-Equinox.dsk" "$SD_ROOT/amstrad/AST-Equinox.dsk" # roms are presented by core from /amstrad folder
-                         download_url 'http://www.amstradabandonware.com/mod/upload/ams_de/games_disk/cyberno2.zip' "$2/roms/"
-                         download_url 'http://www.amstradabandonware.com/mod/upload/ams_de/games_disk/supermgp.zip' "$2/roms/"
+                         download_url 'https://www.amstradabandonware.com/mod/upload/ams_de/games_disk/cyberno2.zip' "$2/roms/"
+                         download_url 'https://www.amstradabandonware.com/mod/upload/ams_de/games_disk/supermgp.zip' "$2/roms/"
                          expand "$2/roms/cyberno2.zip" "$SD_ROOT/amstrad/"
                          expand "$2/roms/supermgp.zip" "$SD_ROOT/amstrad/"
                        }
@@ -698,57 +736,62 @@ apple1_roms()          { if [ $SYSTEM = 'mist' ]; then
                            sdcopy "$1/DEMO40TH.0280.prg" "$2/"
                          fi
                        }
-apple1_roms_alt()      { download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/apple1/BASIC.e000.prg' "$2/"
-                         download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/apple1/DEMO40TH.0280.prg' "$2/"
+apple1_roms_alt()      { download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/apple1/BASIC.e000.prg' "$2/"
+                         download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/apple1/DEMO40TH.0280.prg' "$2/"
                        }
-apple2e_roms()         { download_url 'http://mirrors.apple2.org.za/Apple II Documentation Project/Computers/Apple II/Apple IIe/ROM Images/Apple IIe Enhanced Video ROM - 342-0265-A - US 1983.bin' "$2/"
-                         download_url 'http://archive.org/download/PitchDark/Pitch-Dark-20210331.zip' "$2/"
+apple2e_roms()         { download_url 'https://mirrors.apple2.org.za/Apple II Documentation Project/Computers/Apple II/Apple IIe/ROM Images/Apple IIe Enhanced Video ROM - 342-0265-A - US 1983.bin' "$2/"
+                         download_url 'https://archive.org/download/PitchDark/Pitch-Dark-20210331.zip' "$2/"
                          expand "$2/Pitch-Dark-20210331.zip" "$2/"
                        }
-apple2p_roms()         { download_url 'http://github.com/wsoltys/mist-cores/raw/master/apple2fpga/apple_II.rom' "$2/"
-                         download_url 'http://github.com/wsoltys/mist-cores/raw/master/apple2fpga/bios.rom' "$2/"
+apple2p_roms()         { download_url 'https://github.com/wsoltys/mist-cores/raw/master/apple2fpga/apple_II.rom' "$2/"
+                         download_url 'https://github.com/wsoltys/mist-cores/raw/master/apple2fpga/bios.rom' "$2/"
                        }
-archimedes_roms()      { download_url 'http://github.com/MiSTer-devel/Archie_MiSTer/raw/master/releases/riscos.rom' "$2/"
+archimedes_roms()      { download_url 'https://github.com/MiSTer-devel/Archie_MiSTer/raw/master/releases/riscos.rom' "$2/"
                          sdcopy "$2/riscos.rom" "$SD_ROOT/"
                          sdcopy "$1/SVGAIDE.RAM" "$SD_ROOT/svgaide.ram"
-                         download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/archimedes/archie1.zip' "$2/"
+                         download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/archimedes/archie1.zip' "$2/"
                          expand "$2/archie1.zip" "$SD_ROOT/"
                          expand "$1/RiscDevIDE.zip" "$2/"
                        }
-atarist_roms()         { download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/mist/tos.img' "$SD_ROOT/"
-                         #download_url 'http://downloads.sourceforge.net/project/emutos/emutos/1.2.1/emutos-512k-1.2.1.zip' "$SD_ROOT/"
+atarist_roms()         { download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/mist/tos.img' "$SD_ROOT/"
+                         #download_url 'https://downloads.sourceforge.net/project/emutos/emutos/1.2.1/emutos-512k-1.2.1.zip' "$SD_ROOT/"
                          #expand "$2/emutos-512k-1.2.1.zip" "$2/"; sdcopy "$2/emutos-512k-1.2.1/etos512de.img" "$SD_ROOT/tos.img"
-                         download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/mist/system.fnt' "$SD_ROOT/"
-                         download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/mist/disk_a.st' "$2/"
+                         download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/mist/system.fnt' "$SD_ROOT/"
+                         download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/mist/disk_a.st' "$2/"
                        }
 atari800_roms()        { sdcopy "$1/A800XL.ROM" "$2/a800xl.rom"; }
-atari2600_roms()       { download_url 'http://static.emulatorgames.net/roms/atari-2600/Asteroids (1979) (Atari) (PAL) [!].zip' "$2/roms/"
-                         download_url 'http://download.freeroms.com/atari_roms/starvygr.zip' "$2/roms/"
+atari2600_roms()       { download_url 'https://static.emulatorgames.net/roms/atari-2600/Asteroids (1979) (Atari) (PAL) [!].zip' "$2/roms/"
+                         download_url 'https://download.freeroms.com/atari_roms/starvygr.zip' "$2/roms/"
                          expand "$2/roms/Asteroids (1979) (Atari) (PAL) [!].zip" "$SD_ROOT/ma2601/" # roms are presented by core from /MA2601 folder
                          expand "$2/roms/starvygr.zip" "$SD_ROOT/ma2601/"
                        }
-atari5200_roms()       { download_url 'http://downloads.romspedia.com/roms/Asteroids (1983) (Atari).zip' "$2/roms/"
+atari5200_roms()       { download_url 'https://downloads.romspedia.com/roms/Asteroids (1983) (Atari).zip' "$2/roms/"
                          expand "$2/roms/Asteroids (1983) (Atari).zip" "$SD_ROOT/a5200/" # roms are presented by core from /A5200 folder
                        }
+atari7800_roms()       { download_url 'https://archive.org/download/Atari7800FullRomCollectionReuploadByDataghost/Atari 7800.7z' "$2/"
+                         expand "$2/Atari 7800.7z" "$2/"
+                         makedir "$SD_ROOT/a7800"
+                         cp -pur "$2/Atari 7800/"* "$SD_ROOT/a7800/"
+                       }
 bbc_roms()             { sdcopy "$1/bbc.rom" "$2/"
-                         download_url 'http://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/BBC/BBC.vhd' "$2/"
-                         download_url 'http://www.stardot.org.uk/files/mmb/higgy_mmbeeb-v1.2.zip' "$2/"
+                         download_url 'https://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/BBC/BBC.vhd' "$2/"
+                         download_url 'https://www.stardot.org.uk/files/mmb/higgy_mmbeeb-v1.2.zip' "$2/"
                          expand "$2/higgy_mmbeeb-v1.2.zip" "$2/beeb/"
                          sdcopy "$2/beeb/BEEB.MMB" "$2/BEEB.ssd"
                          rm -rf "$2/beeb"
                        }
 c16_roms()             { sdcopy "$1/c16.rom" "$2/"
-                         download_url 'http://www.c64games.de/c16/spiele/boulder_dash_3.prg' "$2/roms/"
-                         download_url 'http://www.c64games.de/c16/spiele/giana_sisters.prg' "$2/roms/"
+                         download_url 'https://www.c64games.de/c16/spiele/boulder_dash_3.prg' "$2/roms/"
+                         download_url 'https://www.c64games.de/c16/spiele/giana_sisters.prg' "$2/roms/"
                          sdcopy "$2/roms/boulder_dash_3.prg" "$SD_ROOT/c16/" # roms are presented by core from /C16 folder
                          sdcopy "$2/roms/giana_sisters.prg" "$SD_ROOT/c16/"
                        }
 c64_roms()             { sdcopy "$1/c64.rom" "$2/"
                          if [ $SYSTEM = 'mist' ]; then sdcopy "$1/C64GS.ARC" "$2/C64GS.arc"; fi
-                         download_url 'http://csdb.dk/getinternalfile.php/67833/giana sisters.prg' "$2/roms/"
-                         #curl -O "$2/roms/SuperZaxxon.zip" -d 'id=727332&download=Télécharger' 'http://www.planetemu.net/php/roms/download.php'
-                         download_url 'http://www.c64.com/games/download.php?id=315' "$2/roms/" # zaxxon.zip
-                         download_url 'http://www.c64.com/games/download.php?id=2073' "$2/roms/" # super_zaxxon.zip
+                         download_url 'https://csdb.dk/getinternalfile.php/67833/giana sisters.prg' "$2/roms/"
+                         #curl -O "$2/roms/SuperZaxxon.zip" -d 'id=727332&download=Télécharger' 'https://www.planetemu.net/php/roms/download.php'
+                         download_url 'https://www.c64.com/games/download.php?id=315' "$2/roms/" # zaxxon.zip
+                         download_url 'https://www.c64.com/games/download.php?id=2073' "$2/roms/" # super_zaxxon.zip
                          sdcopy "$2/roms/giana sisters.prg" "$SD_ROOT/c64/" # roms are presented by core from /C64 folder
                          expand "$2/roms/zaxxon.zip" "$SD_ROOT/c64/"
                          expand "$2/roms/super_zaxxon.zip" "$SD_ROOT/c64/"
@@ -762,26 +805,46 @@ enterprise_roms()      { sdcopy "$1/ep128.rom" "$2/"
                            rm -rf "$2/hdd"
                          fi
                        }
-gameboy_roms()         { download_url 'http://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/Gameboy.zip' "$2/roms/"
+gameboy_roms()         { download_url 'https://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/Gameboy.zip' "$2/roms/"
                          expand "$2/roms/Gameboy.zip" "$2/roms/"
                        }
-ht1080z_roms()         { if [ $SYSTEM = 'mist' ]; then sdcopy "$1/HT1080Z.ROM" "$2/ht1080z.rom"; else download_url 'http://joco.homeserver.hu/fpga/download/HT1080Z.ROM' "$2/ht1080z.rom"; fi; }
+ht1080z_roms()         { if [ $SYSTEM = 'mist' ]; then sdcopy "$1/HT1080Z.ROM" "$2/ht1080z.rom"; else download_url 'https://joco.homeserver.hu/fpga/download/HT1080Z.ROM' "$2/ht1080z.rom"; fi; }
 intellivision_roms()   { sdcopy "$1/intv.rom" "$2/"; }
 laser500_roms()        { sdcopy "$1/laser500.rom" "$2/"; }
 lm80c_roms()           { sdcopy "$1/lm80c.rom" "$2/"; }
-lynx_roms()            { download_url 'http://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/AtariLynx.zip' "$2/"
+lynx_roms()            { download_url 'https://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/AtariLynx.zip' "$2/"
                          expand "$2/AtariLynx.zip" "$2/"
                        }
-menu_image()           { download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/menu/menu.rom' "$2/"; }
+menu_image()           { download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/menu/menu.rom' "$2/"; }
 msx1_roms()            { expand "$1/MSX1_vhd.rar" "$2/"; }
 msx2p_roms()           { return; }
-nes_roms()             { download_url 'http://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/NES.zip' "$2/"
-                         expand "$2/NES.zip" "$2/"
-                         download_url 'http://nesninja.com/downloadssega/Sonic The Hedgehog (W) (REV01) [!].bin' "$2/roms/"
-                         sdcopy "$2/roms/Sonic The Hedgehog (W) (REV01) [!].bin" "$SD_ROOT/nes/"
+neogeo_roms()          { if [ $SYSTEM = 'mist' ]; then
+                           copy_mra_arcade_cores "$1/bios" '' "$2"
+                         else
+                           git clone -n --depth=1 --filter=tree:0 https://github.com/mist-devel/mist-binaries.git "$2/bios"
+                           git -C "$2/bios" sparse-checkout set --no-cone cores/neogeo/bios
+                           git -C "$2/bios" checkout
+                           copy_mra_arcade_cores "$2/bios/cores/neogeo/bios" '' "$2"
+                         fi
+                         set_hidden_attr "$2/NeoGeo.rbf"
+                         makedir "$SD_ROOT/neogeo"
+                         if [ ! -f "$SD_ROOT/neogeo/neogeo.vhd" ]; then
+                           dd if=/dev/zero of="$SD_ROOT/neogeo/neogeo.vhd" bs=8k count=1
+                         fi
+                         download_url 'https://archive.org/download/1-g-1-r-terra-onion-snk-neo-geo/1G1R - TerraOnion - SNK - Neo Geo.zip/maglord.neo' "$SD_ROOT/neogeo/Magician Lord.neo"
+                         download_url 'https://archive.org/download/1-g-1-r-terra-onion-snk-neo-geo/1G1R - TerraOnion - SNK - Neo Geo.zip/twinspri.neo' "$SD_ROOT/neogeo/Twinkle Star Sprites.neo"
+                       }
+nes_roms()             { download_url 'https://www.retrousb.com/downloads/POWERPAK134105.zip' "$2/roms/"
+                         expand "$2/roms/POWERPAK134105.zip" "$2/roms/"
+                         rm -rf "$2/roms/__MACOSX"
+                         sdcopy "$2/roms/POWERPAK/FDSBIOS.BIN" "$2/fdsbios.bin"
+                         download_url 'https://info.sonicretro.org/images/f/f8/SonicTheHedgehog(Improvment+Tracks).zip' "$2/roms/"
+                         expand "$2/roms/SonicTheHedgehog(Improvment+Tracks).zip" "$SD_ROOT/nes/"
+                         download_url 'https://archive.org/download/nes-romset-ultra-us/Super Mario Kart Raider (Unl) [!].zip' "$2/roms/"
+                         expand "$2/roms/Super Mario Kart Raider (Unl) [!].zip" "$SD_ROOT/nes/"
                        }
 next186_roms()         { sdcopy "$1/Next186.ROM" "$2/next186.rom"
-                         download_url 'http://archive.org/download/next-186.vhd/Next186.vhd.zip' "$2/hd/"
+                         download_url 'https://archive.org/download/next-186.vhd/Next186.vhd.zip' "$2/hd/"
                          expand "$2/hd/Next186.vhd.zip" "$SD_ROOT/"
                          rm -rf "$SD_ROOT/__MACOSX"
                        }
@@ -793,63 +856,99 @@ ondra_roms()           { download_url 'https://docs.google.com/uc?export=downloa
                          rm -rf "$2/Ondra"
                        }
 oric_roms()            { if [ $SYSTEM = 'mist' ]; then sdcopy "$1/oric.rom" "$2/"; fi
-                         download_url 'http://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/1337_dsk.dsk' "$SD_ROOT/oric/"
-                         download_url 'http://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/B7es_dsk.dsk' "$SD_ROOT/oric/"
-                         download_url 'http://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/ElPrisionero.dsk' "$SD_ROOT/oric/"
-                         download_url 'http://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/Oricium12_edsk.dsk' "$SD_ROOT/oric/"
-                         download_url 'http://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/SEDO40u_DSK.dsk' "$SD_ROOT/oric/"
-                         download_url 'http://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/Torreoscura.dsk' "$SD_ROOT/oric/"
-                         download_url 'http://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/space1999-en_dsk.dsk' "$SD_ROOT/oric/"
+                         download_url 'https://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/1337_dsk.dsk' "$SD_ROOT/oric/"
+                         download_url 'https://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/B7es_dsk.dsk' "$SD_ROOT/oric/"
+                         download_url 'https://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/ElPrisionero.dsk' "$SD_ROOT/oric/"
+                         download_url 'https://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/Oricium12_edsk.dsk' "$SD_ROOT/oric/"
+                         download_url 'https://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/SEDO40u_DSK.dsk' "$SD_ROOT/oric/"
+                         download_url 'https://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/Torreoscura.dsk' "$SD_ROOT/oric/"
+                         download_url 'https://github.com/rampa069/Oric_Mist_48K/raw/master/dsk/space1999-en_dsk.dsk' "$SD_ROOT/oric/"
                        }
-pcxt_roms()            { download_url 'http://github.com/MiSTer-devel/PCXT_MiSTer/raw/main/games/PCXT/hd_image.zip' "$2/";
+pcxt_roms()            { download_url 'https://github.com/MiSTer-devel/PCXT_MiSTer/raw/main/games/PCXT/hd_image.zip' "$2/";
                          expand "$2/hd_image.zip" "$2/";
                          mv -f "$2/Freedos_HD.vhd" "$2/PCXT.HD0"
-                         #download_url 'http://github.com/640-KB/GLaBIOS/releases/download/v0.2.4/GLABIOS_0.2.4_8T.ROM';
-                         download_url 'http://github.com/somhi/PCXT_DeMiSTify/raw/main/SW/ROMs/pcxt_pcxt31.rom' "$2/";
+                         #download_url 'https://github.com/640-KB/GLaBIOS/releases/download/v0.2.4/GLABIOS_0.2.4_8T.ROM';
+                         download_url 'https://github.com/somhi/PCXT_DeMiSTify/raw/main/SW/ROMs/pcxt_pcxt31.rom' "$2/";
                        }
-pet2001_roms()         { download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/pet2001/pet2001.rom' "$2/"; }
-plus_too_roms()        { download_url 'http://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/Plus_too/plus_too.rom' "$2/"
+pet2001_roms()         { download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/pet2001/pet2001.rom' "$2/"; }
+plus_too_roms()        { download_url 'https://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/Plus_too/plus_too.rom' "$2/"
                          expand "$1/hdd_empty.zip" "$2/"
                        }
-ql_roms()              { download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/ql/QXL.WIN' "$2/"
-                         download_url 'http://github.com/mist-devel/mist-binaries/raw/master/cores/ql/QL-SD.zip' "$2/"
+ql_roms()              { download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/ql/QXL.WIN' "$2/"
+                         download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/ql/QL-SD.zip' "$2/"
                          expand "$2/QL-SD.zip" "$2/"
                          cp -pu "$1/"*.rom "$2/"
                        }
 samcoupe_roms()        { sdcopy "$1/samcoupe.rom" "$2/"; }
-snes_roms()            { download_url 'http://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/SNES.zip' "$2/"
+snes_roms()            { download_url 'https://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/SNES.zip' "$2/"
                          expand "$2/SNES.zip" "$2/"
-                         download_url 'http://nesninja.com/downloadssnes/Super Mario World (U) [!].smc' "$2/roms/"
+                         download_url 'https://nesninja.com/downloadssnes/Super Mario World (U) [!].smc' "$2/roms/"
                          sdcopy "$2/roms/Super Mario World (U) [!].smc" "$SD_ROOT/snes/"
                        }
 speccy_roms()          { sdcopy "$1/speccy.rom" "$2/"; }
 ti994a_roms()          { sdcopy "$1/TI994A.ROM" "$2/ti994a.rom"; }
-turbogfx_roms()        { download_url 'http://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/TurboGrafx16.zip' "$2/"
+tnzs_roms()            { local tnzs_mras=('The NewZealand Story (World, old version) (P0-041A PCB).mra'
+                                          '_alternatives/_The NewZealand Story/The NewZealand Story (Japan, old version) (P0-041A PCB).mra'
+                                          '_alternatives/_The NewZealand Story/The NewZealand Story (US, old version) (P0-041A PCB).mra'
+                                          '_alternatives/_The NewZealand Story/The NewZealand Story (World, prototype) (P0-041-1 PCB).mra'
+                                          '_alternatives/_The NewZealand Story/The NewZealand Story (World, unknown version) (P0-041A PCB).mra'
+                                          "Dr. Toppel's Adventure (World).mra"
+                                          "_alternatives/_Dr. Toppel's Adventure/Dr. Toppel's Adventure (US).mra"
+                                          "_alternatives/_Dr. Toppel's Adventure/Dr. Toppel's Adventure (Japan).mra"
+                                          'Extermination (World).mra'
+                                          '_alternatives/_Extermination/Extermination (Japan).mra'
+                                          '_alternatives/_Extermination/Extermination (US, Romstar).mra'
+                                          '_alternatives/_Extermination/Extermination (US, World Games).mra'
+                                          'Insector X (World).mra'
+                                          '_alternatives/_Insector X/Insector X (Japan).mra'
+                                          '_alternatives/_Insector X/Insector X (bootleg).mra'
+                                          'Kageki (World).mra'
+                                          '_alternatives/_Kageki/Kageki (Japan).mra'
+                                          '_alternatives/_Kageki/Kageki (US).mra'
+                                          '_alternatives/_Kageki/Kageki (hack).mra'
+                                          'Arkanoid - Revenge of DOH (World).mra'
+                                          '_alternatives/_Arkanoid/Arkanoid - Revenge of DOH (Japan bootleg).mra'
+                                          '_alternatives/_Arkanoid/Arkanoid - Revenge of DOH (Japan).mra'
+                                          '_alternatives/_Arkanoid/Arkanoid - Revenge of DOH (US).mra'
+                                         )
+                         local mra; for mra in "${tnzs_mras[@]}"; do
+                            download_url "https://github.com/jotego/jtbin/raw/master/mra/$mra" "/tmp/"
+                            process_mra "/tmp/$(basename "$mra")" "$2"
+                         done
+                       }
+tsconf_roms()          { cp -pu "$1/TSConf.r"* "$SD_ROOT/"
+                         if [ -f "$1/TSConf.vhd.zip" ]; then
+                           expand "$1/TSConf.vhd.zip" "$SD_ROOT/"
+                         else
+                           download_url "https://github.com/mist-devel/mist-binaries/raw/refs/heads/master/cores/tsconf/TSConf.vhd.zip" "$2/"
+                           expand "$2/TSConf.vhd.zip" "$SD_ROOT/"
+                         fi
+                       }
+turbogfx_roms()        { download_url 'https://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/TurboGrafx16.zip' "$2/"
                          expand "$2/TurboGrafx16.zip" "$2/"
                          cp -pu "$2/TurboGrafx16/"* "$2/"
                          rm -rf "$2/TurboGrafx16/"
                        }
 tvc_roms()             { sdcopy "$1/tvc.rom" "$2/"; }
 vectrex_roms()         {
-                         download_url 'http://archive.org/download/VectrexROMS/Vectrex_ROMS.zip' "$2/roms/"
+                         download_url 'https://archive.org/download/VectrexROMS/Vectrex_ROMS.zip' "$2/roms/"
                          expand "$2/roms/Vectrex_ROMS.zip" "$2/roms/"
-                         local arc
-                         for arc in $(find "$2/roms" -iname '*.7z' | sort); do
+                         local arc; for arc in $(find "$2/roms" -iname '*.7z' | sort); do
                            expand "$arc" "$SD_ROOT/vectrex/"
                          done
                        }
 vic20_roms()           { sdcopy "$1/vic20.rom" "$2/"; }
-videopac_roms()        { download_url 'http://archive.org/download/Philips_Videopac_Plus_TOSEC_2012_04_23/Philips_Videopac_Plus_TOSEC_2012_04_23.zip' "$2/roms/"
+videopac_roms()        { download_url 'https://archive.org/download/Philips_Videopac_Plus_TOSEC_2012_04_23/Philips_Videopac_Plus_TOSEC_2012_04_23.zip' "$2/roms/"
                          expand "$2/roms/Philips_Videopac_Plus_TOSEC_2012_04_23.zip" "$2/roms/"
-                         zippath="$2/roms/Philips Videopac+ [TOSEC]/Philips Videopac+ - Games (TOSEC-v2011-02-22_CM)"
-                         for zip in $(find "$zippath" -iname '*.zip' | sort); do
+                         local zippath="$2/roms/Philips Videopac+ [TOSEC]/Philips Videopac+ - Games (TOSEC-v2011-02-22_CM)"
+                         local zip; for zip in $(find "$zippath" -iname '*.zip' | sort); do
                            expand "$zip" "$SD_ROOT/videopac/"
                          done
                        }
-zx8x_roms()            { download_url 'http://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/ZX8X/zx8x.rom' "$2/"; }
+zx8x_roms()            { download_url 'https://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/ZX8X/zx8x.rom' "$2/"; }
 zx_spectrum_roms()     { sdcopy "$1/spectrum.rom" "$2/"; }
 bagman_roms()          {
-                         download_url 'http://github.com/Gehstock/Mist_FPGA/raw/master/Arcade_MiST/Bagman Hardware/meta/Super Bagman.mra' '/tmp/'
+                         download_url 'https://github.com/Gehstock/Mist_FPGA/raw/master/Arcade_MiST/Bagman Hardware/meta/Super Bagman.mra' '/tmp/'
                          process_mra '/tmp/Super Bagman.mra' "$2"
                        }
 
@@ -860,9 +959,9 @@ cores=(
  # Computers
   "( 'Computer/Amstrad CPC'                           'amstrad'       'Computer/Amstrad CPC'                              amstrad_roms         )"
   "( 'Computer/Amiga'                                 'minimig-aga'   'Computer/Amiga'                                    amiga_roms           )"
-  "( 'Computer/AppleI'                                'apple1'        'Computer/AppleI'                                   apple1_roms          )"
-  "( 'Computer/AppleIIe'                              'appleIIe'      'Computer/AppleIIe'                                 apple2e_roms         )"
-  "( 'Computer/AppleII+'                              'appleii+'      'Computer/AppleII+'                                 apple2p_roms         )"
+  "( 'Computer/Apple I'                               'apple1'        'Computer/AppleI'                                   apple1_roms          )"
+  "( 'Computer/Apple IIe'                             'appleIIe'      'Computer/AppleIIe'                                 apple2e_roms         )"
+  "( 'Computer/Apple II+'                             'appleii+'      'Computer/AppleII+'                                 apple2p_roms         )"
   "( 'Computer/Apple Macintosh'                       'plus_too'      'Computer/Plus_too'                                 plus_too_roms        )"
   "( 'Computer/Archimedes'                            'archimedes'    'Computer/Archimedes'                               archimedes_roms      )"
   "( 'Computer/Atari 800'                             'atari800'      'Computer/Atari800'                                 atari800_roms        )"
@@ -888,6 +987,7 @@ cores=(
   "( 'Computer/SAM Coupe'                             'samcoupe'      'Computer/Sam Coupe'                                samcoupe_roms        )"
   "( 'Computer/Speccy'                                ''              'Computer/Speccy'                                   speccy_roms          )"
   "( 'Computer/TI99-4A'                               'ti994a'        'Computer/TI994A'                                   ti994a_roms          )"
+  "( 'Computer/TSConf'                                'tsconf'        'Computer/TSConf'                                   tsconf_roms          )"
   "( 'Computer/VIC20'                                 'vic20'         'Computer/VIC20'                                    vic20_roms           )"
   "( 'Computer/ZX8x'                                  'zx01'          'Computer/ZX8X'                                     zx8x_roms            )"
   "( 'Computer/ZX-Next'                               'zxn'           'Computer/ZX Spectrum Next'                                              )"
@@ -896,6 +996,7 @@ cores=(
  # Consoles
   "( 'Console/Atari 2600'                             'a2600'         'Console/A2600'                                     atari2600_roms       )"
   "( 'Console/Atari 5200'                             'atari5200'     'Console/A5200'                                     atari5200_roms       )"
+  "( 'Console/Atari 7800'                             'atari7800'     'Console/A7800'                                     atari7800_roms       )"
   "( 'Console/Astrocade'                              'astrocade'     'Console/Astrocade'                                                      )"
   "( 'Console/ColecoVision'                           'colecovision'  'Console/COLECOVISION'                                                   )"
   "( 'Console/Gameboy'                                'gameboy'       'Console/GAMEBOY'                                   gameboy_roms         )"
@@ -905,6 +1006,7 @@ cores=(
   "( 'Console/Nintendo SNES'                          'snes'          'Console/SNES'                                      snes_roms            )"
   "( 'Console/PC Engine'                              'pcengine'      'Console/PCE'                                       turbogfx_roms        )"
   "( 'Console/SEGA MasterSystem'                      'sms'           'Console/SMS'                                                            )"
+  "( 'Console/SEGA Master System Nuked'               'sms-nuked'     ''                                                                       )"
   "( 'Console/Videoton TV Computer'                   'tvc'           ''                                                  tvc_roms             )"
   "( 'Console/Vectrex'                                ''              'Console/Vectrex'                                   vectrex_roms         )"
   "( 'Console/Videopac'                               'videopac'      'Console/VIDEOPAC'                                  videopac_roms        )"
@@ -933,7 +1035,8 @@ cores=(
   "( 'Arcade/IremM72'                                 ''              'Arcade/IremM72'                                                         )"
   "( 'Arcade/IremM92'                                 ''              'Arcade/IremM92'                                                         )"
   "( 'Arcade/Jotego'                                  ''              'Arcade/Jotego'                                                          )"
-  "( 'Arcade/Neogeo'                                  'neogeo'        'Arcade/Neogeo'                                                          )"
+ #"( 'Arcade/Jotego/TAITO TNZS'                       ''              'Arcade/JTKiwi'                                     tnzs_roms            )" # handled by copy_jotego_arcade_cores()
+  "( 'Arcade/NeoGeo'                                  'neogeo'        'Arcade/Neogeo'                                     neogeo_roms          )"
   "( 'Arcade/Prehisle'                                ''              'Arcade/Prehisle'                                                        )"
   "( 'Arcade/Konami Hardware'                         ''              'Arcade/Konami hardware/konami hardware.rar'                             )"
   "( 'Arcade'                                         ''              'Arcade/Nintendo hardware/Nintendo hardware.rar'    nintendo_sysattr     )"
@@ -950,13 +1053,13 @@ copy_mist_cores() {
   local srcroot=$GIT_ROOT/MiST/binaries
 
   # get MiST binary repository
-  clone_or_update_git 'http://github.com/mist-devel/mist-binaries.git' "$srcroot"
+  clone_or_update_git 'https://github.com/mist-devel/mist-binaries.git' "$srcroot"
 
   # default ini file (it not exists)
   [ -f "$dstroot/mist.ini" ] || sdcopy "$srcroot/cores/mist.ini" "$dstroot/"
 
   # Firmware upgrade file
-  cp -pu "$srcroot/firmware/firmware"*.upg "$dstroot/firmware.upg"
+  sdcopy "$srcroot/firmware/firmware"*.upg "$dstroot/firmware.upg"
 
   # loop over folders in MiST repository
   local saveIFS=$IFS
@@ -1010,7 +1113,7 @@ copy_sidi_cores() {
   local srcroot=$GIT_ROOT/SiDi/ManuFerHi
 
   # get SiDi binary repository
-  clone_or_update_git 'http://github.com/ManuFerHi/SiDi-FPGA.git' "$srcroot"
+  clone_or_update_git 'https://github.com/ManuFerHi/SiDi-FPGA.git' "$srcroot"
 
   # default ini file (it not exists)
   [ -f "$dstroot/mist.ini" ] || download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/mist.ini' "$dstroot/"
@@ -1039,11 +1142,11 @@ copy_sidi_cores() {
               echo -e "\n${dir//$GIT_ROOT\//}"
               if [ "$dst" = "." ]; then
                 # copy latest menu core and set hidden attribute to hide this core from menu
-                copy_latest_core "$dir" "$dstroot/$dst/core.rbf" 'sidi'
+                copy_latest_core "$dir" "$dstroot/$dst/core.rbf" 'sidi' 'sidi128'
                 set_hidden_attr "$dstroot/$dst/core.rbf"
               else
                 # create destination folder, set system attribute for this subfolder to be visible in menu core and copy latest core
-                copy_latest_core "$dir" "$dstroot/$dst/$(basename "$dst").rbf" 'sidi'
+                copy_latest_core "$dir" "$dstroot/$dst/$(basename "$dst").rbf" 'sidi' 'sidi128'
                 set_system_attr "$dstroot/$dst"
               fi
               # optional rom handling
@@ -1107,11 +1210,11 @@ copy_sidi_cores() {
       if [ -d "$srcroot/Cores/$src" ]; then
         if [ "$dst" = '.' ]; then
           # copy latest menu core and set hidden attribute to hide this core from menu
-          copy_latest_core "$srcroot/Cores/$src" "$dstroot/$dst/core.rbf" 'sidi'
+          copy_latest_core "$srcroot/Cores/$src" "$dstroot/$dst/core.rbf" 'sidi' 'sidi128'
           set_hidden_attr "$dstroot/$dst/core.rbf"
         else
           # set system attribute for this subfolder to be visible in menu core and copy latest core
-          copy_latest_core "$srcroot/Cores/$src" "$dstroot/$dst/$(basename "$dst").rbf" 'sidi'
+          copy_latest_core "$srcroot/Cores/$src" "$dstroot/$dst/$(basename "$dst").rbf" 'sidi' 'sidi128'
           set_system_attr "$dstroot/$dst"
         fi
       elif [ -f "$srcroot/Cores/$src" ]; then
@@ -1161,18 +1264,18 @@ check_sd_filesystem() {
 
 
 show_usage() {
-  echo -e "\n Usage: $0 [-d <destination SD drive or folder>] [-s <mist|sidi>] [-h]\n" \
-          "Generate SD card content with Jotego cores/roms for specific FPGA platform.\n" \
+  echo -e "\nUsage: $0 [-d <destination SD drive or folder>] [-s <mist|sidi>] [-h]" \
+          "\nGenerate SD card content with Jotego cores/roms for specific FPGA platform." \
           "\n" \
-          "Optional arguments:\n" \
-          " -d <destination SD (drive) folder>\n" \
-          "    Location where the target files should be generated.\n" \
-          "    If this option isn't specified, 'SD\sidi' will be used by default.\n" \
-          " -s <mist|sidi>\n" \
-          "    Set target system (mist or sidi).\n" \
-          "    If this option isn't specified, 'sidi' will be used by default.\n" \
-          " -h\n" \
-          "    Show this help text\n"
+          "\nOptional arguments:" \
+          "\n -d <destination SD (drive) folder>" \
+          "\n    Location where the target files should be generated." \
+          "\n    If this option isn't specified, 'SD\sidi' will be used by default." \
+          "\n -s <mist|sidi>" \
+          "\n    Set target system (mist or sidi)." \
+          "\n    If this option isn't specified, 'sidi' will be used by default." \
+          "\n -h" \
+          "\n    Show this help text\n"
 }
 
 
@@ -1202,13 +1305,17 @@ check_sd_filesystem "$SD_ROOT"
 check_dependencies
 
 echo -e "Creating destination folder '$SD_ROOT'..."
-mkdir -p "$SD_ROOT"
+makedir "$SD_ROOT"
 
 # testing specfic cores
-# download_url 'http://raw.githubusercontent.com/Gehstock/Mist_FPGA_Cores/master/Arcade_MiST/Konami Scramble Hardware/calipso.mra' '/tmp/'
-# download_url 'http://raw.githubusercontent.com/Gehstock/Mist_FPGA_Cores/master/Arcade_MiST/Konami Scramble Hardware/Scramble.rbf' '/tmp/'
+# download_url 'https://raw.githubusercontent.com/Gehstock/Mist_FPGA_Cores/master/Arcade_MiST/Konami Scramble Hardware/calipso.mra' '/tmp/'
+# download_url 'https://raw.githubusercontent.com/Gehstock/Mist_FPGA_Cores/master/Arcade_MiST/Namco%20Galaxian%20Hardware/Z80%20Based/Devil%20Fish.mra' '/tmp/'
+# download_url 'https://raw.githubusercontent.com/Gehstock/Mist_FPGA_Cores/master/Arcade_MiST/Konami Scramble Hardware/Scramble.rbf' '/tmp/'
 # process_mra '/tmp/calipso.mra' . '/tmp'
+# process_mra '/tmp/Devil Fish.mra' . '/tmp'
 # copy_mist_cores $SD_ROOT 'Console/Videopac'
+# copy_mist_cores $SD_ROOT 'Computer/Mattel Aquarius'
+# copy_sidi_cores $SD_ROOT 'Arcade/Jotego/TAITO TNZS'
 # exit 0
 
 # start generating
