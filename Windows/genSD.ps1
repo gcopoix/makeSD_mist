@@ -242,7 +242,7 @@ function download_url {
     $dst="$dst/$($url.Split('/')[-1])"
   }
   # skip download if file exists
-  if ((Test-Path $dst) -And ((Get-Item $dst).length -gt 0)) {
+  if ((Test-Path -LiteralPath $dst) -And ((Get-Item $dst).length -gt 0)) {
     Write-Host ' exists.'
   } else {
     try {
@@ -316,10 +316,12 @@ function download_mame_roms {
    #( 0222, 'https://archive.org/download/MAME222RomsOnlyMerged/'                                   ),
    #( 0223, 'https://archive.org/download/MAME223RomsOnlyMerged/'                                   ),
     ( 0224, 'https://archive.org/download/mame0.224/'                                               ),
-   #( 0229, 'https://archive.org/download/mame.0229/'                                               ),
+   #( 0224, 'https://archive.org/download/MAME_0.224_ROMs_merged/'                                  ),
+    ( 0229, 'https://archive.org/download/mame.0229/'                                               ),
    #( 0236, 'https://archive.org/download/mame-0.236-roms-split/MAME 0.236 ROMs (split)/'           ),
    #( 0240, 'https://archive.org/download/mame.0240/'                                               ),
    #( 0245, 'https://archive.org/download/mame.0245.revival/'                                       ),
+   #( 0245, 'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/'           ),
    #( 0251, 'https://archive.org/download/mame251/'                                                 ),
    #( 0252, 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.252 ROMs (merged)/' ),
    #( 0254, 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.254 ROMs (merged)/' ),
@@ -329,6 +331,7 @@ function download_mame_roms {
    #( 9999, 'https://bda.retroroms.net/downloads/mame/currentroms/'                                 ),
     ( 9999, 'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/'                   ),
     ( 9999, 'https://downloads.retrostic.com/roms/'                                                 ),
+    ( 9999, 'https://archive.org/download/fbnarcade-fullnonmerged/arcade/'                          ),
     ( 9999, 'https://www.doperoms.org/files/roms/mame/GETFILE_'                                     ) # without '/', archive.zip leads to 'GETFILE_archive.zip')
   )
   # list of ROMs not downloadable from URLs above, using dedicated download URLs
@@ -338,7 +341,6 @@ function download_mame_roms {
    #( 'clubpacm.zip',       'https://archive.org/download/mame-merged/mame-merged/clubpacm.zip'                    ), #bad MD5
    #( 'journey.zip',        'https://archive.org/download/MAME216RomsOnlyMerged/journey.zip'                       ), #bad MD5
    #( 'journey.zip',        'https://downloads.retrostic.com/roms/journey.zip'                                     ), #bad MD5
-   #( 's16mcu_alt.zip',     'https://misterfpga.org/download/file.php?id=3319'                                     ), #ok
    #( 'wbml.zip',           'https://archive.org/download/MAME224RomsOnlyMerged/wbml.zip'                          ), #bad MD5
    #( 'wbml.zip',           'https://downloads.retrostic.com/roms/wbml.zip'                                        ), #missing files
    #( 'wbml.zip',           'https://archive.org/download/mame.0229/wbml.zip'                                      ), #bad MD5
@@ -346,8 +348,12 @@ function download_mame_roms {
    #( 'xevious.zip',        'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/xevious.zip'       ), #bad MD5
    #( 'xevious.zip',        'https://archive.org/download/MAME216RomsOnlyMerged/xevious.zip'                       ), #bad MD5
    #( 'xevious.zip',        'https://archive.org/download/mame-merged/mame-merged/xevious.zip'                     ), #bad MD5 & parts missing
+    ( 'airduel.zip',        'https://www.doperoms.org/files/roms/mame/GETFILE_airduel.zip'                         ), #ok
+    ( 'neocdz.zip',         'https://archive.org/download/mame-0.221-roms-merged/neocdz.zip'                       ), #ok
+    ( 'neogeo.zip',         'https://github.com/Abdess/retroarch_system/raw/libretro/Arcade/neogeo.zip'            ), #ok
     ( 'roadfu.zip',         'https://archive.org/download/mame0.224/roadfu.zip'                                    ), #ok
-   #( 'rastsagaabl.zip',    'https://bda.retroroms.info:82/downloads/mame/update-packs/mame-0240/rastsagaabl.zip' ), #login required
+    ( 'irrmaze.zip',        'https://www.doperoms.org/files/roms/mame/GETFILE_irrmaze.zip'                         ), #ok
+   #( 'rastsagaabl.zip',    'https://bda.retroroms.info:82/downloads/mame/update-packs/mame-0240/rastsagaabl.zip'  ), #login required
     ( 'zaxxon_samples.zip', 'https://www.arcadeathome.com/samples/zaxxon.zip'                                      ), #ok
     ( 'jtbeta.zip',         'https://archive.org/download/jtkeybeta/beta.zip'                                      )  #https://twitter.com/jtkeygetterscr1/status/1403441761721012224?s=20&t=xvNJtLeBsEOr5rsDHRMZyw
   )
@@ -1011,7 +1017,7 @@ function tsconf_roms        {  param ( $1, $2 )
                               if (Test-Path "$1/TSConf.vhd.zip") {
                                 expand "$1/TSConf.vhd.zip" "$SD_ROOT/"
                               } else {
-                                download_url "https://github.com/mist-devel/mist-binaries/raw/refs/heads/master/cores/tsconf/TSConf.vhd.zip" "$2/" | Out-Null
+                                download_url "https://github.com/mist-devel/mist-binaries/raw/master/cores/tsconf/TSConf.vhd.zip" "$2/" | Out-Null
                                 expand "$2/TSConf.vhd.zip" "$SD_ROOT/"
                               }
                             }

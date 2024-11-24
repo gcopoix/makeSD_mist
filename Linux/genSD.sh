@@ -159,6 +159,8 @@ download_url() {
   # create destination folder if it doesn't exist
   if [ "${dst: -1}" = '/' ]; then
     makedir "$dst"
+  else
+    makedir "$(dirname $dst)"
   fi
   if [ -d "$dst" ]; then
     local opt=-qNP
@@ -227,6 +229,7 @@ download_mame_roms() {
    #"( '0222' 'https://archive.org/download/MAME222RomsOnlyMerged/'                                   )"
    #"( '0223' 'https://archive.org/download/MAME223RomsOnlyMerged/'                                   )"
     "( '0224' 'https://archive.org/download/mame0.224/'                                               )"
+   #"( '0224' 'https://archive.org/download/MAME_0.224_ROMs_merged/'                                  )"
     "( '0229' 'https://archive.org/download/mame.0229/'                                               )" # for wbml.zip
    #"( '0236' 'https://archive.org/download/mame-0.236-roms-split/MAME 0.236 ROMs (split)/'           )"
    #"( '0240' 'https://archive.org/download/mame.0240/'                                               )"
@@ -240,6 +243,7 @@ download_mame_roms() {
    #"( '9999' 'https://bda.retroroms.net/downloads/mame/currentroms/'                                 )"
     "( '9999' 'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/'                   )"
     "( '9999' 'https://downloads.retrostic.com/roms/'                                                 )"
+    "( '9999' 'https://archive.org/download/fbnarcade-fullnonmerged/arcade/'                          )"
     "( '9999' 'https://www.doperoms.org/files/roms/mame/GETFILE_'                                     )" # without '/', archive.zip leads to 'GETFILE_archive.zip')
   )
   # list of ROMs not downloadable from URLs above, using dedicated download URLs
@@ -257,7 +261,11 @@ download_mame_roms() {
    #"( 'xevious.zip'        'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/xevious.zip'       )" #bad MD5
    #"( 'xevious.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/xevious.zip'                       )" #bad MD5
    #"( 'xevious.zip'        'https://archive.org/download/mame-merged/mame-merged/xevious.zip'                     )" #bad MD5 & parts missing
+    "( 'airduel.zip'        'https://www.doperoms.org/files/roms/mame/GETFILE_airduel.zip'                         )" #ok
+    "( 'neocdz.zip'         'https://archive.org/download/mame-0.221-roms-merged/neocdz.zip'                       )" #ok
+    "( 'neogeo.zip'         'https://github.com/Abdess/retroarch_system/raw/libretro/Arcade/neogeo.zip'            )" #ok
     "( 'roadfu.zip'         'https://archive.org/download/mame0.224/roadfu.zip'                                    )" #ok
+    "( 'irrmaze.zip'        'https://www.doperoms.org/files/roms/mame/GETFILE_irrmaze.zip'                         )" #ok
    #"( 'rastsagaabl.zip'    'https://bda.retroroms.info:82/downloads/mame/update-packs/mame-0240/rastsagaabl.zip'  )" #login required
     "( 'zaxxon_samples.zip' 'https://www.arcadeathome.com/samples/zaxxon.zip'                                      )" #ok
     "( 'jtbeta.zip'         'https://archive.org/download/jtkeybeta/beta.zip'                                      )" #ok, from https://twitter.com/jtkeygetterscr1/status/1403441761721012224?s=20&t=xvNJtLeBsEOr5rsDHRMZyw
@@ -289,10 +297,6 @@ download_mame_roms() {
           fi
         fi
       done
-      [ -z "$rlu" ] && continue
-
-      #3rd: try https://doperoms.org
-      #download_url "https://doperoms.org/files/roms/mame/GETFILE_$zip" "$dstroot/"
     done
   fi
 }
@@ -920,7 +924,7 @@ tsconf_roms()          { cp -pu "$1/TSConf.r"* "$SD_ROOT/"
                          if [ -f "$1/TSConf.vhd.zip" ]; then
                            expand "$1/TSConf.vhd.zip" "$SD_ROOT/"
                          else
-                           download_url "https://github.com/mist-devel/mist-binaries/raw/refs/heads/master/cores/tsconf/TSConf.vhd.zip" "$2/"
+                           download_url "https://github.com/mist-devel/mist-binaries/raw/master/cores/tsconf/TSConf.vhd.zip" "$2/"
                            expand "$2/TSConf.vhd.zip" "$SD_ROOT/"
                          fi
                        }
@@ -1313,9 +1317,13 @@ makedir "$SD_ROOT"
 # download_url 'https://raw.githubusercontent.com/Gehstock/Mist_FPGA_Cores/master/Arcade_MiST/Konami Scramble Hardware/Scramble.rbf' '/tmp/'
 # process_mra '/tmp/calipso.mra' . '/tmp'
 # process_mra '/tmp/Devil Fish.mra' . '/tmp'
+# download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/neogeo/bios/Universe BIOS (Hack, Ver. 4.0).mra' '/tmp/'
+# download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/neogeo/NeoGeo_230806.rbf' '/tmp/neogeo.rbf'
+# process_mra '/tmp/Universe BIOS (Hack, Ver. 4.0).mra' "$SD_ROOT" '/tmp'
 # copy_mist_cores $SD_ROOT 'Console/Videopac'
 # copy_mist_cores $SD_ROOT 'Computer/Mattel Aquarius'
 # copy_sidi_cores $SD_ROOT 'Arcade/Jotego/TAITO TNZS'
+# copy_mist_cores $SD_ROOT 'Arcade/NeoGeo'
 # exit 0
 
 # start generating
