@@ -3,20 +3,20 @@
 if which shellcheck 1>/dev/null; then
   if shellcheck -S warning -e SC2155 "$(dirname "${BASH_SOURCE[0]}")/../Linux/genSD.sh" \
   && shellcheck -S warning "${BASH_SOURCE[0]}"; then
-    echo "shellcheck passed.\n"
+    echo 'shellcheck passed.'
   else
-    echo -e "\e[1;31mERROR: shellcheck of Linux/genSD.sh failed\e[0m\n"
+    echo -e '\e[1;31mERROR: shellcheck of Linux/genSD.sh failed\e[0m\n'
     exit 1
 
   fi
 else
-  echo -e "\e[1;33mWARNING: shellcheck not installed!\e[0m\n" \
-          "Please install by \e[1mapt install -y shellcheck\e[0m to enable shellcheck'ing."
+  echo -e '\e[1;33mWARNING: shellcheck not installed!\e[0m\n' \
+          'Please install by \e[1mapt install -y shellcheck\e[0m to enable shellchecking.'
 fi
 
 avail=$(df --output=avail . | tail -n 1)
-if [ $avail -lt 40000000 ]; then
-  echo -e "\e[1;31mERROR: Not enough free disk space ($(df -h --output=avail . | tail -n 1 | tr -d '[:blank:]')). Minimum 40GB required\e[0m\n"
+if [ $avail -lt 50000000 ]; then
+  echo -e "\e[1;31mERROR: Not enough free disk space ($(df -h --output=avail . | tail -n 1 | tr -d '[:blank:]')). Minimum 50GB required\e[0m\n"
   exit 1
 fi
 

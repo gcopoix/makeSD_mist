@@ -160,7 +160,7 @@ download_url() {
   if [ "${dst: -1}" = '/' ]; then
     makedir "$dst"
   else
-    makedir "$(dirname $dst)"
+    makedir "$(dirname "$dst")"
   fi
   if [ -d "$dst" ]; then
     local opt=-qNP
@@ -192,11 +192,10 @@ copy_latest_core() {
   local exclude=$4 # $4: optional exclude pattern
 
   echo "  '${srcdir//$GIT_ROOT\//}' -> '${dstfile//$(dirname "${BASH_SOURCE[0]}")\//}'"
-  local rbf=$(ls -1t "$srcdir/"*.rbf)
+  local rbf=$(cd "$srcdir" && ls -1t *.rbf)
   if [ ! -z "$pattern" ]; then rbf=$(echo "$rbf" | grep -i "$pattern"); fi
   if [ ! -z "$exclude" ]; then rbf=$(echo "$rbf" | grep -v -i "$exclude"); fi
-
-  sdcopy "$(echo "$rbf" | head -1)" "$dstfile"
+  sdcopy "$srcdir/$(echo "$rbf" | head -1)" "$dstfile"
 }
 
 
@@ -230,17 +229,18 @@ download_mame_roms() {
    #"( '0223' 'https://archive.org/download/MAME223RomsOnlyMerged/'                                   )"
     "( '0224' 'https://archive.org/download/mame0.224/'                                               )"
    #"( '0224' 'https://archive.org/download/MAME_0.224_ROMs_merged/'                                  )"
-    "( '0229' 'https://archive.org/download/mame.0229/'                                               )" # for wbml.zip
+    "( '0229' 'https://archive.org/download/mame.0229/'                                               )"
    #"( '0236' 'https://archive.org/download/mame-0.236-roms-split/MAME 0.236 ROMs (split)/'           )"
    #"( '0240' 'https://archive.org/download/mame.0240/'                                               )"
    #"( '0245' 'https://archive.org/download/mame.0245.revival/'                                       )"
+   #"( '0245' 'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/'           )"
    #"( '0251' 'https://archive.org/download/mame251/'                                                 )"
    #"( '0252' 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.252 ROMs (merged)/' )"
    #"( '0254' 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.254 ROMs (merged)/' )"
    #"( '0256' 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.256 ROMs (merged)/' )"
     "( '0259' 'https://archive.org/download/mame-merged/mame-merged/'                                 )"
-    "( '0271' 'https://bda.retroroms.net/downloads/mame/mame-0271-full/'                              )"
-   #"( '9999' 'https://bda.retroroms.net/downloads/mame/currentroms/'                                 )"
+   #"( '0271' 'https://bda.retroroms.net/downloads/mame/mame-0271-full/'                              )" # login required
+   #"( '9999' 'https://bda.retroroms.net/downloads/mame/currentroms/'                                 )" # login required
     "( '9999' 'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/'                   )"
     "( '9999' 'https://downloads.retrostic.com/roms/'                                                 )"
     "( '9999' 'https://archive.org/download/fbnarcade-fullnonmerged/arcade/'                          )"
@@ -249,24 +249,25 @@ download_mame_roms() {
   # list of ROMs not downloadable from URLs above, using dedicated download URLs
   local romlookup=(
    #"( 'combh.zip'          'https://downloads.retrostic.com/roms/combatsc.zip'                                    )" #bad MD5
+   #"( 'combh.zip'          'https://archive.org/download/mame-0.236-roms-split/MAME 0.236 ROMs (split)/combh.zip' )" #bad MD5
    #"( 'clubpacm.zip'       'https://downloads.retrostic.com/roms/clubpacm.zip'                                    )" #bad MD5
-   #"( 'clubpacm.zip'       'https://archive.org/download/mame-merged/mame-merged/clubpacm.zip'                    )" #bad MD5
+   #"( 'clubpacm.zip'       'https://archive.org/download/mame251/clubpacm.zip'                                    )" #bad MD5
    #"( 'journey.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/journey.zip'                       )" #bad MD5
    #"( 'journey.zip'        'https://downloads.retrostic.com/roms/journey.zip'                                     )" #bad MD5
-   #"( 's16mcu_alt.zip'     'https://misterfpga.org/download/file.php?id=3319'                                     )" #ok
+   #"( 'journey.zip'        'https://mdk.cab/download/split/journey'                                               )" #bad MD5
    #"( 'wbml.zip'           'https://archive.org/download/MAME224RomsOnlyMerged/wbml.zip'                          )" #bad MD5
    #"( 'wbml.zip'           'https://downloads.retrostic.com/roms/wbml.zip'                                        )" #missing files
    #"( 'wbml.zip'           'https://archive.org/download/mame.0229/wbml.zip'                                      )" #bad MD5
+   #"( 'wbml.zip'           'https://downloads.romspedia.com/roms/wbml.zip'                                        )" #missing files
    #"( 'xevious.zip'        'https://downloads.retrostic.com/roms/xevious.zip'                                     )" #bad MD5
    #"( 'xevious.zip'        'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/xevious.zip'       )" #bad MD5
    #"( 'xevious.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/xevious.zip'                       )" #bad MD5
-   #"( 'xevious.zip'        'https://archive.org/download/mame-merged/mame-merged/xevious.zip'                     )" #bad MD5 & parts missing
+   #"( 'xevious.zip'        'https://mdk.cab/download/split/xevious'                                               )" #missing files
     "( 'airduel.zip'        'https://www.doperoms.org/files/roms/mame/GETFILE_airduel.zip'                         )" #ok
     "( 'neocdz.zip'         'https://archive.org/download/mame-0.221-roms-merged/neocdz.zip'                       )" #ok
     "( 'neogeo.zip'         'https://github.com/Abdess/retroarch_system/raw/libretro/Arcade/neogeo.zip'            )" #ok
     "( 'roadfu.zip'         'https://archive.org/download/mame0.224/roadfu.zip'                                    )" #ok
     "( 'irrmaze.zip'        'https://www.doperoms.org/files/roms/mame/GETFILE_irrmaze.zip'                         )" #ok
-   #"( 'rastsagaabl.zip'    'https://bda.retroroms.info:82/downloads/mame/update-packs/mame-0240/rastsagaabl.zip'  )" #login required
     "( 'zaxxon_samples.zip' 'https://www.arcadeathome.com/samples/zaxxon.zip'                                      )" #ok
     "( 'jtbeta.zip'         'https://archive.org/download/jtkeybeta/beta.zip'                                      )" #ok, from https://twitter.com/jtkeygetterscr1/status/1403441761721012224?s=20&t=xvNJtLeBsEOr5rsDHRMZyw
   )
@@ -473,11 +474,10 @@ copy_mra_arcade_cores() {
 
 
 copy_jotego_arcade_cores() {
-  local fpga=$1    # $1: target system ('mist' or 'sidi')
-  local dstroot=$2 # $2: target folder
+  local dstroot=$1 # $1: target folder
 
   echo -e "\n----------------------------------------------------------------------" \
-          "\nCopy Jotego Cores for '$fpga' to '$dstroot'" \
+          "\nCopy Jotego Cores for '$SYSTEM' to '$dstroot'" \
           "\n----------------------------------------------------------------------\n"
 
   # some lookup to sort games into sub folder (if they don't support the <platform> tag)
@@ -496,10 +496,10 @@ copy_jotego_arcade_cores() {
   local srcpath=$GIT_ROOT/jotego
   clone_or_update_git 'https://github.com/jotego/jtbin.git' "$srcpath"
 
-  # add cores from somhi repo (not yet part of jotego binaries)
-  local jtname=$([[ $fpga == 'mist' ]] && echo 'jtoutrun_MiST_230312' || echo 'jtoutrun_SiDi_20231108')
-  download_url "https://github.com/somhi/jtbin/raw/master/$fpga/$jtname.rbf" "$srcpath/$fpga/jtoutrun.rbf"
-  download_url "https://github.com/somhi/jtbin/raw/master/$fpga/jtkiwi.rbf"  "$srcpath/$fpga/"
+  # add non-official mist/sidi cores from somhi repo (not yet part of jotego binaries)
+  local jtname=$([[ $SYSTEM == 'mist' ]] && echo 'jtoutrun_MiST_230312' || echo 'jtoutrun_SiDi_20231108')
+  download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/$jtname.rbf" "$srcpath/$SYSTEM/jtoutrun.rbf"
+  download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/jtkiwi.rbf"  "$srcpath/$SYSTEM/"
 
   # ini file from jotego git
   #sdcopy "$srcpath/arc/mist.ini" "$dstroot/"
@@ -509,7 +509,7 @@ copy_jotego_arcade_cores() {
   IFS=$(echo -en "\n\b")
   local dir
   for dir in $(find "$srcpath/mra" -type d | sort); do
-    copy_mra_arcade_cores "$dir" "$srcpath/$fpga" "$dstroot" "${jtlookup[@]}"
+    copy_mra_arcade_cores "$dir" "$srcpath/$SYSTEM" "$dstroot" "${jtlookup[@]}"
   done
   IFS=$saveIFS
 }
@@ -587,7 +587,7 @@ copy_sorgelig_mist_cores() {
 
   # additional cores from Alexey Melnikov's (sorgelig) repositories
   local cores=(
-   #"( 'dst folder'                    'git url'                                   'core release folder' opt_romcoppy_fn  )"
+   #"( 'dst folder'                    'git url'                                    'core release folder' opt_romcopy_fn   )"
     "( 'Arcade/Sorgelig/Apogee'        'https://github.com/sorgelig/Apogee_MIST.git'           'release'  apogee_roms      )"
     "( 'Arcade/Sorgelig/Galaga'        'https://github.com/sorgelig/Galaga_MIST.git'           'releases'                  )"
     "( 'Computer/Vector-06'            'https://github.com/sorgelig/Vector06_MIST.git'         'releases'                  )"
@@ -663,30 +663,30 @@ copy_eubrunosilva_sidi_cores() {
   # additional Computer cores from eubrunosilva repos (which aren't in ManuFerHi's repo)
   local comp_cores=(
    #"( 'dst folder'                       'pattern'       opt_rom_copy_fn )"
-    "( 'Computer/HT1080Z School Computer' 'trs80'         ht1080z_roms    )"
-    "( 'Computer/BK0011M'                 'BK0011M'                       )"
+    "( 'Computer/Apoge'                   'Apoge'         apogee_roms     )"
     "( 'Computer/Chip-8'                  'Chip8'                         )"
+    "( 'Computer/HT1080Z School Computer' 'trs80'         ht1080z_roms    )"
     "( 'Computer/Microcomputer'           'Microcomputer'                 )"
     "( 'Computer/Specialist'              'Specialist'                    )"
     "( 'Computer/Vector-06'               'Vector06'                      )"
    # other eubrunosilva cores are already part of SiDi binaries repo
    #"( 'Computer/Amstrad'                 'Amstrad'       amstrad_roms    )"
-   #"( 'Computer/BBC Micro'               'bbc'           bbc_roms        )"
-   #"( 'Computer/Oric'                    'Oric'          oric_roms       )"
-   #"( 'Computer/SAM Coupe'               'SAMCoupe'      samcoupe_roms   )"
-   #"( 'Computer/Apoge'                   'Apoge'         apogee_roms     )"
-   #"( 'Computer/PET2001'                 'Pet2001'       pet2001_roms    )"
-   #"( 'Computer/VIC20'                   'VIC20'         vic20_roms      )"
-   #"( 'Computer/Mattel Aquarius'         'Aquarius'                      )"
-   #"( 'Computer/C16'                     'c16'           c16_roms        )"
-   #"( 'Computer/Atari STe'               'Mistery'       atarist_roms    )"
    #"( 'Computer/Apple Macintosh'         'plusToo'       plus_too_roms   )"
+   #"( 'Computer/Archimedes'              'Archie'        archimedes_roms )"
+   #"( 'Computer/Atari STe'               'Mistery'       atarist_roms    )"
+   #"( 'Computer/BBC Micro'               'bbc'           bbc_roms        )"
+   #"( 'Computer/BK0011M'                 'BK0011M'                       )"
+   #"( 'Computer/C16'                     'c16'           c16_roms        )"
+   #"( 'Computer/C64'                     'c64'           c64_roms        )"
+   #"( 'Computer/Mattel Aquarius'         'Aquarius'                      )"
+   #"( 'Computer/MSX1'                    'MSX'           msx1_roms       )"
+   #"( 'Computer/Oric'                    'Oric'          oric_roms       )"
+   #"( 'Computer/PET2001'                 'Pet2001'       pet2001_roms    )"
+   #"( 'Computer/SAM Coupe'               'SAMCoupe'      samcoupe_roms   )"
+   #"( 'Computer/Sinclair QL'             'QL'            ql_roms         )"
+   #"( 'Computer/VIC20'                   'VIC20'         vic20_roms      )"
    #"( 'Computer/ZX Spectrum 128k'        'Spectrum128k'                  )"
    #"( 'Computer/ZX8x'                    'ZX8x'          zx8x_roms       )"
-   #"( 'Computer/Archimedes'              'Archie'        archimedes_roms )"
-   #"( 'Computer/C64'                     'c64'           c64_roms        )"
-   #"( 'Computer/MSX1'                    'MSX'           msx1_roms       )"
-   #"( 'Computer/Sinclair QL'             'QL'            ql_roms         )"
   )
 
   local item
@@ -784,6 +784,7 @@ bbc_roms()             { sdcopy "$1/bbc.rom" "$2/"
                          sdcopy "$2/beeb/BEEB.MMB" "$2/BEEB.ssd"
                          rm -rf "$2/beeb"
                        }
+bk0011m_roms()         { sdcopy "$1/bk0011m.rom" "$2/"; }
 c16_roms()             { sdcopy "$1/c16.rom" "$2/"
                          download_url 'https://www.c64games.de/c16/spiele/boulder_dash_3.prg' "$2/roms/"
                          download_url 'https://www.c64games.de/c16/spiele/giana_sisters.prg' "$2/roms/"
@@ -838,10 +839,11 @@ neogeo_roms()          { if [ $SYSTEM = 'mist' ]; then
                          download_url 'https://archive.org/download/1-g-1-r-terra-onion-snk-neo-geo/1G1R - TerraOnion - SNK - Neo Geo.zip/maglord.neo' "$SD_ROOT/neogeo/Magician Lord.neo"
                          download_url 'https://archive.org/download/1-g-1-r-terra-onion-snk-neo-geo/1G1R - TerraOnion - SNK - Neo Geo.zip/twinspri.neo' "$SD_ROOT/neogeo/Twinkle Star Sprites.neo"
                        }
-nes_roms()             { download_url 'https://www.retrousb.com/downloads/POWERPAK134105.zip' "$2/roms/"
-                         expand "$2/roms/POWERPAK134105.zip" "$2/roms/"
-                         rm -rf "$2/roms/__MACOSX"
+nes_roms()             { download_url 'https://www.nesworld.com/powerpak/powerpak130.zip' "$2/roms/"
+                         expand "$2/roms/powerpak130.zip" "$2/roms/"
                          sdcopy "$2/roms/POWERPAK/FDSBIOS.BIN" "$2/fdsbios.bin"
+                         rm "$2/roms/powerpak130.zip"
+                         rm -rf "$2/roms/POWERPAK"
                          download_url 'https://info.sonicretro.org/images/f/f8/SonicTheHedgehog(Improvment+Tracks).zip' "$2/roms/"
                          expand "$2/roms/SonicTheHedgehog(Improvment+Tracks).zip" "$SD_ROOT/nes/"
                          download_url 'https://archive.org/download/nes-romset-ultra-us/Super Mario Kart Raider (Unl) [!].zip' "$2/roms/"
@@ -891,29 +893,30 @@ snes_roms()            { download_url 'https://archive.org/download/mister-conso
                        }
 speccy_roms()          { sdcopy "$1/speccy.rom" "$2/"; }
 ti994a_roms()          { sdcopy "$1/TI994A.ROM" "$2/ti994a.rom"; }
-tnzs_roms()            { local tnzs_mras=('The NewZealand Story (World, old version) (P0-041A PCB).mra'
-                                          '_alternatives/_The NewZealand Story/The NewZealand Story (Japan, old version) (P0-041A PCB).mra'
-                                          '_alternatives/_The NewZealand Story/The NewZealand Story (US, old version) (P0-041A PCB).mra'
-                                          '_alternatives/_The NewZealand Story/The NewZealand Story (World, prototype) (P0-041-1 PCB).mra'
-                                          '_alternatives/_The NewZealand Story/The NewZealand Story (World, unknown version) (P0-041A PCB).mra'
-                                          "Dr. Toppel's Adventure (World).mra"
+tnzs_roms()            { local tnzs_mras=("Dr. Toppel's Adventure (World).mra"
+                                          "Extermination (World).mra"
+                                          "Insector X (World).mra"
+                                          "Kageki (World).mra"
+                                          "The NewZealand Story (World, new version) (P0-043A PCB).mra"
+                                          "_alternatives/_Arkanoid/Arkanoid - Revenge of DOH (Japan bootleg).mra"
+                                          "_alternatives/_Arkanoid/Arkanoid - Revenge of DOH (Japan).mra"
+                                          "_alternatives/_Arkanoid/Arkanoid - Revenge of DOH (US).mra"
                                           "_alternatives/_Dr. Toppel's Adventure/Dr. Toppel's Adventure (US).mra"
-                                          "_alternatives/_Dr. Toppel's Adventure/Dr. Toppel's Adventure (Japan).mra"
-                                          'Extermination (World).mra'
-                                          '_alternatives/_Extermination/Extermination (Japan).mra'
-                                          '_alternatives/_Extermination/Extermination (US, Romstar).mra'
-                                          '_alternatives/_Extermination/Extermination (US, World Games).mra'
-                                          'Insector X (World).mra'
-                                          '_alternatives/_Insector X/Insector X (Japan).mra'
-                                          '_alternatives/_Insector X/Insector X (bootleg).mra'
-                                          'Kageki (World).mra'
-                                          '_alternatives/_Kageki/Kageki (Japan).mra'
-                                          '_alternatives/_Kageki/Kageki (US).mra'
-                                          '_alternatives/_Kageki/Kageki (hack).mra'
-                                          'Arkanoid - Revenge of DOH (World).mra'
-                                          '_alternatives/_Arkanoid/Arkanoid - Revenge of DOH (Japan bootleg).mra'
-                                          '_alternatives/_Arkanoid/Arkanoid - Revenge of DOH (Japan).mra'
-                                          '_alternatives/_Arkanoid/Arkanoid - Revenge of DOH (US).mra'
+                                          "_alternatives/_Dr. Toppel's Adventure/Dr. Toppel's Tankentai (Japan).mra"
+                                          "_alternatives/_Extermination/Extermination (Japan).mra"
+                                          "_alternatives/_Extermination/Extermination (US, Romstar).mra"
+                                          "_alternatives/_Extermination/Extermination (US, World Games).mra"
+                                          "_alternatives/_Insector X/Insector X (bootleg).mra"
+                                          "_alternatives/_Insector X/Insector X (Japan).mra"
+                                          "_alternatives/_Kageki/Kageki (hack).mra"
+                                          "_alternatives/_Kageki/Kageki (Japan).mra"
+                                          "_alternatives/_Kageki/Kageki (US).mra"
+                                          "_alternatives/_The NewZealand Story/The NewZealand Story (Japan, old version) (P0-041A PCB).mra"
+                                          "_alternatives/_The NewZealand Story/The NewZealand Story (Japan, new version) (P0-043A PCB).mra"
+                                          "_alternatives/_The NewZealand Story/The NewZealand Story (US, old version) (P0-041A PCB).mra"
+                                          "_alternatives/_The NewZealand Story/The NewZealand Story (World, prototype) (P0-041-1 PCB).mra"
+                                          "_alternatives/_The NewZealand Story/The NewZealand Story (World, unknown version) (P0-041A PCB).mra"
+                                          "_alternatives/_The NewZealand Story/The NewZealand Story (World, old version) (P0-041A PCB).mra"
                                          )
                          local mra; for mra in "${tnzs_mras[@]}"; do
                             download_url "https://github.com/jotego/jtbin/raw/master/mra/$mra" "/tmp/"
@@ -949,6 +952,7 @@ videopac_roms()        { download_url 'https://archive.org/download/Philips_Vide
                            expand "$zip" "$SD_ROOT/videopac/"
                          done
                        }
+x68000_roms()          { sdcopy "$1/X68000.rom" "$2/"; sdcopy "$1/BLANK_disk_X68000.D88" "$2/"; }
 zx8x_roms()            { download_url 'https://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/ZX8X/zx8x.rom' "$2/"; }
 zx_spectrum_roms()     { sdcopy "$1/spectrum.rom" "$2/"; }
 bagman_roms()          {
@@ -959,9 +963,10 @@ bagman_roms()          {
 cores=(
  #"( 'core dst dir'                                   'src dir MiST'  'src dir SiDi'                                      opt_rom_copy_fn      )"
  # Main Menu
-  "( '.'                                              'menu'          'menu/release'                                      menu_image           )"
+  "( '.'                                              'menu'          'menu'                                              menu_image           )"
  # Computers
-  "( 'Computer/Amstrad CPC'                           'amstrad'       'Computer/Amstrad CPC'                              amstrad_roms         )"
+  "( 'Computer/Amstrad CPC'                           'amstrad'       'Computer/AmstradCPC'                               amstrad_roms         )"
+  "( 'Computer/Amstrad PCW'                           ''              'Computer/AmstradPCW'                                                    )"
   "( 'Computer/Amiga'                                 'minimig-aga'   'Computer/Amiga'                                    amiga_roms           )"
   "( 'Computer/Apple I'                               'apple1'        'Computer/AppleI'                                   apple1_roms          )"
   "( 'Computer/Apple IIe'                             'appleIIe'      'Computer/AppleIIe'                                 apple2e_roms         )"
@@ -972,12 +977,15 @@ cores=(
   "( 'Computer/Atari ST'                              'mist'          'Computer/AtariST'                                  atarist_roms         )"
   "( 'Computer/Atari STe'                             'mistery'       'Computer/Mistery'                                  atarist_roms         )"
   "( 'Computer/BBC Micro'                             'bbc'           'Computer/BBC'                                      bbc_roms             )"
+  "( 'Computer/BK0011M'                               ''              'Computer/BK0011M'                                  bk0011m_roms         )"
   "( 'Computer/C16'                                   'c16'           'Computer/C16'                                      c16_roms             )"
   "( 'Computer/C64'                                   'fpga64'        'Computer/C64'                                      c64_roms             )"
+  "( 'Computer/Coleco Adam'                           ''              'Computer/Adam'                                                          )"
   "( 'Computer/Color Computer'                        ''              'Computer/Coco'                                     coco_roms            )"
-  "( 'Computer/Enterprise 128'                        'enterprise'    'Computer/Elan Enterprise'                          enterprise_roms      )"
+  "( 'Computer/Enterprise 128'                        'enterprise'    'Computer/ElanEnterprise'                           enterprise_roms      )"
   "( 'Computer/HT1080Z School Computer'               'ht1080z'       ''                                                                       )"
   "( 'Computer/Laser500'                              ''              'Computer/Laser500'                                 laser500_roms        )"
+  "( 'Computer/Luxor ABC80'                           'abc80'         'Computer/ABC80'                                                         )"
   "( 'Computer/Lynx'                                  ''              'Computer/CamputerLynx'                                                  )"
   "( 'Computer/Mattel Aquarius'                       'aquarius'      'Computer/MattelAquarius'                                                )"
   "( 'Computer/MSX1'                                  ''              'Computer/MSX1'                                     msx1_roms            )"
@@ -988,15 +996,17 @@ cores=(
   "( 'Computer/PET2001'                               'pet2001'       'Computer/PET2001'                                  pet2001_roms         )"
   "( 'Computer/Robotron Z1013'                        'z1013'         ''                                                                       )"
   "( 'Computer/Sinclair QL'                           'ql'            'Computer/QL'                                       ql_roms              )"
-  "( 'Computer/SAM Coupe'                             'samcoupe'      'Computer/Sam Coupe'                                samcoupe_roms        )"
+  "( 'Computer/SAM Coupe'                             'samcoupe'      'Computer/SamCoupe'                                 samcoupe_roms        )"
   "( 'Computer/Speccy'                                ''              'Computer/Speccy'                                   speccy_roms          )"
   "( 'Computer/TI99-4A'                               'ti994a'        'Computer/TI994A'                                   ti994a_roms          )"
   "( 'Computer/TSConf'                                'tsconf'        'Computer/TSConf'                                   tsconf_roms          )"
   "( 'Computer/VIC20'                                 'vic20'         'Computer/VIC20'                                    vic20_roms           )"
+  "( 'Computer/Videoton TV Computer'                  'tvc'           'Computer/VideotonTVC'                              tvc_roms             )"
+  "( 'Computer/X68000'                                ''              'Computer/X68000'                                   x68000_roms          )"
   "( 'Computer/ZX8x'                                  'zx01'          'Computer/ZX8X'                                     zx8x_roms            )"
-  "( 'Computer/ZX-Next'                               'zxn'           'Computer/ZX Spectrum Next'                                              )"
-  "( 'Computer/ZX Spectrum'                           'spectrum'      'Computer/ZX Spectrum'                              zx_spectrum_roms     )"
-  "( 'Computer/ZX Spectrum 48k'                       ''              'Computer/ZX Spectrum 48K Kyp'                                           )"
+  "( 'Computer/ZX-Next'                               'zxn'           'Computer/ZXSpectrum_Next'                                               )"
+  "( 'Computer/ZX Spectrum'                           'spectrum'      'Computer/ZXSpectrum'                               zx_spectrum_roms     )"
+  "( 'Computer/ZX Spectrum 48k'                       ''              'Computer/ZXSpectrum48K_Kyp'                                             )"
  # Consoles
   "( 'Console/Atari 2600'                             'a2600'         'Console/A2600'                                     atari2600_roms       )"
   "( 'Console/Atari 5200'                             'atari5200'     'Console/A5200'                                     atari5200_roms       )"
@@ -1011,7 +1021,6 @@ cores=(
   "( 'Console/PC Engine'                              'pcengine'      'Console/PCE'                                       turbogfx_roms        )"
   "( 'Console/SEGA MasterSystem'                      'sms'           'Console/SMS'                                                            )"
   "( 'Console/SEGA Master System Nuked'               'sms-nuked'     ''                                                                       )"
-  "( 'Console/Videoton TV Computer'                   'tvc'           ''                                                  tvc_roms             )"
   "( 'Console/Vectrex'                                ''              'Console/Vectrex'                                   vectrex_roms         )"
   "( 'Console/Videopac'                               'videopac'      'Console/VIDEOPAC'                                  videopac_roms        )"
  # Arcade: Gehstock
@@ -1027,6 +1036,7 @@ cores=(
   "( 'Arcade/Gehstock/Galaxian Hardware'              ''              'Arcade/Gehstock/Galaxian Hardware.rar'                                  )"
   "( 'Arcade/Gehstock/Pacman Hardware'                ''              'Arcade/Gehstock/Pacman_hardware.rar'                                    )"
   "( 'Arcade/Gehstock/Phoenix Hardware'               ''              'Arcade/Gehstock/Phoenix_hardware.rar'                                   )"
+  "( 'Arcade/Gehstock/Tetris'                         ''              'Arcade/Gehstock'                                                        )"
  # Arcade: Jotego fetched directly from Jotego jtbin repository
  #"( 'Arcade/Jotego/jt1942_SiDi.rbf'                  ''              'Arcade/Jotego/1942'                                1942_roms            )"
  #"( 'Arcade/Jotego/jt1943_SiDi.rbf'                  ''              'Arcade/Jotego/1943'                                1943_roms            )"
@@ -1038,12 +1048,11 @@ cores=(
   "( 'Arcade/Alpha68k'                                ''              'Arcade/Alpha68k'                                                        )"
   "( 'Arcade/IremM72'                                 ''              'Arcade/IremM72'                                                         )"
   "( 'Arcade/IremM92'                                 ''              'Arcade/IremM92'                                                         )"
-  "( 'Arcade/Jotego'                                  ''              'Arcade/Jotego'                                                          )"
- #"( 'Arcade/Jotego/TAITO TNZS'                       ''              'Arcade/JTKiwi'                                     tnzs_roms            )" # handled by copy_jotego_arcade_cores()
-  "( 'Arcade/NeoGeo'                                  'neogeo'        'Arcade/Neogeo'                                     neogeo_roms          )"
-  "( 'Arcade/Prehisle'                                ''              'Arcade/Prehisle'                                                        )"
+  "( 'Arcade/Jotego/TAITO TNZS'                       ''              'Arcade/JTKiwi'                                     tnzs_roms            )"
   "( 'Arcade/Konami Hardware'                         ''              'Arcade/Konami hardware/konami hardware.rar'                             )"
+  "( 'Arcade/NeoGeo'                                  'neogeo'        'Arcade/Neogeo'                                     neogeo_roms          )"
   "( 'Arcade'                                         ''              'Arcade/Nintendo hardware/Nintendo hardware.rar'    nintendo_sysattr     )"
+  "( 'Arcade/Prehisle'                                ''              'Arcade/Prehisle'                                                        )"
 )
 
 copy_mist_cores() {
@@ -1065,11 +1074,19 @@ copy_mist_cores() {
   # Firmware upgrade file
   sdcopy "$srcroot/firmware/firmware"*.upg "$dstroot/firmware.upg"
 
-  # loop over folders in MiST repository
+  # loop over arcade folders in MiST repository
   local saveIFS=$IFS
   IFS=$(echo -en "\n\b")
   local dir line src dst hdl
-  for dir in $(find "$srcroot/cores" -maxdepth 1 -type d | sort); do
+  for dir in $(find "$srcroot/cores/arcade" -maxdepth 1 -mindepth 1 -type d | sort); do
+    # support for optional testing of single specific core
+    if [ "$testcore" != "" ] && [[ "$dir" == *"$testcore"* ]]; then continue; fi
+    # generate destination arcade folders from .mra and .core files
+    copy_mra_arcade_cores "$dir" "$dir" "$dstroot/Arcade/MiST/$(basename "$dir")"
+  done
+
+  # loop over other folders in MiST repository
+  for dir in $(find "$srcroot/cores" -maxdepth 1 -mindepth 1 -type d -not -name 'arcade' | sort); do
     # check if in our list of cores
     for line in "${cores[@]}"; do
       eval "line=$line"
@@ -1107,7 +1124,7 @@ copy_mist_cores() {
 }
 
 copy_sidi_cores() {
-  local dstroot=$1 # $1: destination folder
+  local dstroot=$1  # $1: destination folder
   local testcore=$2 # $2: optional core for single test
 
   echo -e "\n----------------------------------------------------------------------" \
@@ -1125,119 +1142,79 @@ copy_sidi_cores() {
   # Firmware upgrade file
   sdcopy "$srcroot/Firmware/firmware"*.upg "$dstroot/firmware.upg"
 
-  if [ true ]; then
-    # loop over folders in SiDi repository
-    local saveIFS=$IFS
-    IFS=$(echo -en "\n\b")
-    local dir line src dst hdl
-    for dir in $(find "$srcroot/Cores" -type d | sort); do
-      if [ "$(basename "$dir")" != 'old' ] && [ "$(basename "$dir")" != 'output_files' ]; then
-        if [ -n "$(find "$dir" -maxdepth 1 -iname '*.rbf')" ]; then
+  # loop over folders in SiDi repository
+  local saveIFS=$IFS
+  IFS=$(echo -en "\n\b")
+  local dir line src dst hdl
+  for dir in $(find "$srcroot/Cores" -type d | sort); do
+    if [ "$(basename "$dir")" != 'old' ] && [ "$(basename "$dir")" != 'output_files' ]; then
+      if [ -n "$(find "$dir" -maxdepth 1 -iname '*.rbf' 2>/dev/null)" ]; then
+        # check if in our list of cores
+        for line in "${cores[@]}"; do
+          eval "line=$line"
+          dst=${line[0]}
+          src=${line[2]/'Arcade/'/"Arcade/SiDi/"}
+          hdl=${line[3]}
+          if [ "$srcroot/Cores/$src" = "$dir" ]; then
+            # support for optional testing of single specific core
+            if [ "$testcore" != "" ] && [ "$testcore" != "$dst" ]; then continue; fi
+            # Info
+            echo -e "\n${dir//$GIT_ROOT\//}"
+            if [ "$dst" = "." ]; then
+              # copy latest menu core and set hidden attribute to hide this core from menu
+              copy_latest_core "$dir" "$dstroot/$dst/core.rbf" 'sidi' 'sidi128'
+              set_hidden_attr "$dstroot/$dst/core.rbf"
+            else
+              # create destination folder, set system attribute for this subfolder to be visible in menu core and copy latest core
+              copy_latest_core "$dir" "$dstroot/$dst/$(basename "$dst").rbf" 'sidi' 'sidi128'
+              set_system_attr "$dstroot/$dst"
+            fi
+            # optional rom handling
+            if [ ! -z "$hdl" ]; then
+              $hdl "$dir" "$dstroot/$dst"
+            fi
+            dir=''
+            break
+          fi
+        done
+      fi
+      if [ -n "$(find "$dir" -maxdepth 1 -iname '*.rar' 2>/dev/null)" ]; then
+        for rar in $(find "$dir" -iname '*.rar' | sort); do
           # check if in our list of cores
           for line in "${cores[@]}"; do
             eval "line=$line"
             dst=${line[0]}
-            src=${line[2]}
+            src=${line[2]/'Arcade/'/"Arcade/SiDi/"}
             hdl=${line[3]}
-            if [ "$srcroot/Cores/$src" = "$dir" ]; then
+            if [ "$srcroot/Cores/$src" = "$rar" ]; then
               # support for optional testing of single specific core
               if [ "$testcore" != "" ] && [ "$testcore" != "$dst" ]; then continue; fi
               # Info
-              echo -e "\n${dir//$GIT_ROOT\//}"
-              if [ "$dst" = "." ]; then
-                # copy latest menu core and set hidden attribute to hide this core from menu
-                copy_latest_core "$dir" "$dstroot/$dst/core.rbf" 'sidi' 'sidi128'
-                set_hidden_attr "$dstroot/$dst/core.rbf"
-              else
-                # create destination folder, set system attribute for this subfolder to be visible in menu core and copy latest core
-                copy_latest_core "$dir" "$dstroot/$dst/$(basename "$dst").rbf" 'sidi' 'sidi128'
-                set_system_attr "$dstroot/$dst"
-              fi
+              echo -e "\n${rar//$GIT_ROOT\//} ..."
+              # uncompress to destination folder
+              echo "  Uncompressing $src ..."
+              expand "$rar" "$dstroot/$dst"
               # optional rom handling
               if [ ! -z "$hdl" ]; then
                 $hdl "$dir" "$dstroot/$dst"
               fi
+              # set system attribute for this subfolder to be visible in menu core and extract cores
+              set_system_attr "$dstroot/$dst"
               dir=''
               break
             fi
           done
-        elif [ -n "$(find "$dir" -maxdepth 1 -iname '*.rar')" ]; then
-          for rar in $(find "$dir" -iname '*.rar' | sort); do
-            # check if in our list of cores
-            for line in "${cores[@]}"; do
-              eval "line=$line"
-              dst=${line[0]}
-              src=${line[2]}
-              hdl=${line[3]}
-              if [ "$srcroot/Cores/$src" = "$rar" ]; then
-                # support for optional testing of single specific core
-                if [ "$testcore" != "" ] && [ "$testcore" != "$dst" ]; then continue; fi
-                # Info
-                echo -e "\n${rar//$GIT_ROOT\//} ..."
-                # uncompress to destination folder
-                echo "  Uncompressing $src ..."
-                expand "$rar" "$dstroot/$dst"
-                # optional rom handling
-                if [ ! -z "$hdl" ]; then
-                  $hdl "$dir" "$dstroot/$dst"
-                fi
-                # set system attribute for this subfolder to be visible in menu core and extract cores
-                set_system_attr "$dstroot/$dst"
-                dir=''
-                break
-              fi
-            done
-          done
-        fi
-
-        if [ ! -z $dir ]; then
-          if ([ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rbf')" ] || [ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rar')" ]); then
-            echo -e "\e[1;31m\nUnhandled: \"$dir\"\e[0m"
-          fi
-        fi
-      fi
-    done
-    IFS=$saveIFS
-  else
-    # Loop over list of cores
-    local line src dst hdl
-    for line in "${cores[@]}"; do
-      eval "line=$line"
-      dst=${line[0]}
-      src=${line[2]}
-      hdl=${line[3]}
-
-      # Info
-      echo -e "\n${dst//$GIT_ROOT\//} ..."
-
-      # handle core(s)
-      if [ -d "$srcroot/Cores/$src" ]; then
-        if [ "$dst" = '.' ]; then
-          # copy latest menu core and set hidden attribute to hide this core from menu
-          copy_latest_core "$srcroot/Cores/$src" "$dstroot/$dst/core.rbf" 'sidi' 'sidi128'
-          set_hidden_attr "$dstroot/$dst/core.rbf"
-        else
-          # set system attribute for this subfolder to be visible in menu core and copy latest core
-          copy_latest_core "$srcroot/Cores/$src" "$dstroot/$dst/$(basename "$dst").rbf" 'sidi' 'sidi128'
-          set_system_attr "$dstroot/$dst"
-        fi
-      elif [ -f "$srcroot/Cores/$src" ]; then
-        case "$srcroot/Cores/$src" in
-          *.rbf) sdcopy "$srcroot/Cores/$src" "$dstroot/$dst/";;
-          *.rar) expand "$srcroot/Cores/$src" "$dstroot/$dst";;
-          *)     echo -e "\n\e[1;31m  ERROR: Invalid extension: '$src'\e[0m";;
-        esac
-        set_system_attr "$dstroot/$dst"
-      else
-        echo -e "\e[1;31m  ERROR: Invalid '$srcroot/Cores/$src'\e[0m"
+        done
       fi
 
-      # optional rom handling
-      if [ ! -z "$hdl" ]; then
-        $hdl "$srcroot/Cores/$src" "$dstroot/$dst"
+      if [ ! -z $dir ]; then
+        if ([ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rbf' 2>/dev/null)" ] || [ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rar' 2>/dev/null)" ]); then
+          echo -e "\e[1;31m\nUnhandled: \"$dir\"\e[0m"
+        fi
       fi
-    done
-  fi
+    fi
+  done
+  IFS=$saveIFS
 }
 
 
@@ -1246,23 +1223,18 @@ check_sd_filesystem() {
 
   # check filesystem of SD folder (only vfat and msdos supported by fatattr ioctrls - fuseblk update pending)
   fs=$(stat -f -c %T "$dstroot")
+  echo -e "\nFilesystem type of destination '$SD_ROOT' is '$fs'."
   if [ "$fs" != 'vfat' ] && [ "$fs" != 'msdos' ] ; then
-    prompt='Pick an option:'
-    options=('y' 'n')
-    echo -e "\nFilesystem type of destination '$dstroot' is '$fs',"
-    echo "but should be 'vfat' or 'msdos'."
-    echo "This means some DOS file/folder attributes (SYSTEM/HIDDEN) can't be set correctly."
-    echo "Continue anyway?"
-    PS3="$prompt "
-    select opt in "${options[@]}"; do
+    echo -e "-> some DOS file/folder attributes (SYSTEM/HIDDEN) can't be set correctly ('msdos' and 'vfat' only)" \
+            "\nContinue anyway?"
+    PS3='Pick an option:'
+    select opt in 'y' 'n'; do
       case "$REPLY" in
       'y'|'Y') echo ""; break;;
       'n'|'N') false; exit 1;;
       *) echo "Invalid option (Y or N)";continue;;
       esac
     done
-  else
-    echo -e "\nFilesystem type of destination \"$dstroot\" is '$fs'."
   fi
 }
 
@@ -1283,18 +1255,19 @@ show_usage() {
 }
 
 
+# Parse commandline options
 while getopts ':hs:d:' option; do
   case $option in
     d)  SD_ROOT=$OPTARG;;
     s)  SYSTEM=${OPTARG,,}
         if [ $SYSTEM != 'sidi' ] && [ $SYSTEM != 'mist' ]; then
           echo -e "\n\e[1;31mInvalid target \"$SYSTEM\"!\e[0m"
-          show_usage; false; return
+          show_usage; exit 1
         fi;;
-    h)  show_usage; true; return;;
+    h)  show_usage; exit 0;;
     \?) echo -e "\n\e[1;31mERROR: Invalid option \"$option\"\e[0m"
-        show_usage; false; return;;
-   esac
+        show_usage; exit 1;;
+  esac
 done
 if [ -z "$SYSTEM" ];  then SYSTEM='sidi'; fi
 if [ -z "$SD_ROOT" ]; then SD_ROOT=$(dirname "${BASH_SOURCE[0]}")/SD/$SYSTEM; fi
@@ -1303,13 +1276,13 @@ echo -e "\n---------------------------------------------------------------------
 echo -e "Generating SD content for '$SYSTEM' to '$SD_ROOT'"
 echo -e "----------------------------------------------------------------------\n"
 
+echo -e "Creating destination folder '$SD_ROOT'..."
+makedir "$SD_ROOT"
+
 # check filesystem of SD folder
 check_sd_filesystem "$SD_ROOT"
 # check required helper tools
 check_dependencies
-
-echo -e "Creating destination folder '$SD_ROOT'..."
-makedir "$SD_ROOT"
 
 # testing specfic cores
 # download_url 'https://raw.githubusercontent.com/Gehstock/Mist_FPGA_Cores/master/Arcade_MiST/Konami Scramble Hardware/calipso.mra' '/tmp/'
@@ -1321,9 +1294,11 @@ makedir "$SD_ROOT"
 # download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/neogeo/NeoGeo_230806.rbf' '/tmp/neogeo.rbf'
 # process_mra '/tmp/Universe BIOS (Hack, Ver. 4.0).mra' "$SD_ROOT" '/tmp'
 # copy_mist_cores $SD_ROOT 'Console/Videopac'
+# copy_sidi_cores $SD_ROOT 'Console/Videopac'
 # copy_mist_cores $SD_ROOT 'Computer/Mattel Aquarius'
 # copy_sidi_cores $SD_ROOT 'Arcade/Jotego/TAITO TNZS'
 # copy_mist_cores $SD_ROOT 'Arcade/NeoGeo'
+# copy_sorgelig_mist_cores "$SD_ROOT"
 # exit 0
 
 # start generating
@@ -1336,6 +1311,6 @@ elif [ $SYSTEM = 'mist' ]; then
   copy_gehstock_mist_cores "$SD_ROOT"
   copy_joco_mist_cores "$SD_ROOT"
 fi
-copy_jotego_arcade_cores "$SYSTEM" "$SD_ROOT/Arcade/Jotego"
+copy_jotego_arcade_cores "$SD_ROOT/Arcade/Jotego"
 
 echo -e '\ndone.'
