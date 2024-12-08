@@ -1,4 +1,4 @@
-# Script to initialize an SD card for MiST or SiDi FPGA retro board
+# Script to initialize an SD card for MiST, SiDi and SiDi128 FPGA retro board
 
 This script initializes or updates the SD cards for either a [MiST](https://github.com/mist-devel/mist-board/wiki) or [SiDi](https://github.com/ManuFerHi/SiDi-FPGA/wiki) FPGA retro system. \
 It tries to create a complete as possible collection of cores and their required ROM files to get an out-of-the-box working SD card. \
@@ -12,9 +12,9 @@ After executing this script appr.
 
 | |MiST|SiDi|
 |---|---|---|
-|.rbf|~230|~200|
-|.arc|~1100|~900|
-|.rom|~1150|~930|
+|.rbf|~255|~140|
+|.arc|~1320|~940|
+|.rom|~1360|~970|
 
 files are collected/generated.
 
@@ -126,7 +126,7 @@ During installation, several temporary folders are created in the folder of the 
 │       └── eubrunosilva # eubrunosilva SiDi core repository
 └── tools                # required tools for executung this script
 ```
-It is a good idea to keep these folders as the next run will be much faster (git only needs to be updated and not cloned, the download of the MAME ROMs can be skipped, ...). \
+It is a good idea to keep these folders as the next run will be much faster (git only needs to update and not clone, the download of the MAME ROMs can be skipped, ...). \
 This saves more than 10GB of data not being fetched again.
 
 ## Developing
@@ -137,7 +137,7 @@ The [.vscode](.vscode) folder provides a workspace file for [Visual Studio Code]
    - PowerShell Debugger
 - script debug environment
 
-A [configuration](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) file for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test](test/test.bat#L15) script
+A [configuration](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) file for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test.bat](test/test.bat#L15) script
 
 ## Testing
 There are initial [test scripts](test) to be executed with Linux and Windows. \
@@ -160,9 +160,9 @@ Additionally, a full log for each set is created in the 'SD#' folder with some s
 - some statistics about the number of .rbf, .arc and .rom files
 
 Additionally it is always a good idea to compare the Linux and Windows generated sets and logs. \
-Please keep in mind that each test execution will consume about 40GB of HDD space (the Linux version more as it will test the PowerShell script too) - not talking about the test run time (several hours)
+Please keep in mind that each test execution will consume about 50GB of HDD space (the Linux version more as it will test the PowerShell script too) - not talking about the test run time (several hours)
 
-For testing specific cores, please refere some [test code](Linux/genSD.sh#L1207-1212) left disabled in the scripts.
+For testing/debugging specific cores, please refere some [test code](Linux/genSD.sh#L1287-1302) left disabled in the scripts.
 
 ## Known issues
 - **exFAT and DOS attributes (Linux version only)** \
@@ -171,10 +171,10 @@ For testing specific cores, please refere some [test code](Linux/genSD.sh#L1207-
   Linux can write these attributes on FAT or FAT32 drives and SD cards (`msdos`/`vfat` filesystem, written by `fatattr`), but not yet on exFAT formatted cards (`fuseblk` filesystem). \
   This will hopefully be updated in the future (or somebody has a hint how to modify these attributes on exFAT drives). \
   If the Linux script detects a non-FAT/FAT32 filesystem, it asks to continue as the folder attributes can't be set correctly. \
-  The windows Powershell script doesn't have this issue.
+  The windows Powershell script executed on a Windows system doesn't have this issue.
 - **.mra parsing of ROM files** \
   The ROM file names parsed from the `.mra` files refer a MAME version. \
-  Unfortunetly many ROMS, if fetched from their referred MAME version, don't match. I tried to find a best matching [set of download URLs](Linux/genSD.sh#L197-L231) incl. some [extra handling](Linux/genSD.sh#L233-L251), but for some ROM archives `mra` still complains about checksum mismatch or missing parts: \
+  Unfortunetly many ROMS, if fetched from their referred MAME version, don't match. I tried to find a best matching [set of download URLs](Linux/genSD.sh#L208-L248) incl. some [extra handling](Linux/genSD.sh#L250-L273), but for some ROM archives `mra` still complains about checksum mismatch or missing parts: \
   **ROMs not found**: \
   `mikiek.zip`, `rastsagaabl.zip` \
   **ROMs found, but with MD5 mismatch or missing parts**: \
@@ -190,7 +190,7 @@ For testing specific cores, please refere some [test code](Linux/genSD.sh#L1207-
 - **mist.ini** \
   Currently the script simply uses the default [mist.ini](https://github.com/mist-devel/mist-binaries/blob/master/cores/mist.ini) from the main repository. \
   Generating a configuration with [optimal settings](http://github.com/mist-devel/mist-board/wiki/DocIni) for each core would be a nice additional feature for this script. \
-  Jotego provides a [mist.ini](https://github.com/jotego/jtbin/blob/master/arc/mist.ini) extension for his cores.
+  Jotego provides an extended [mist.ini](https://github.com/jotego/jtbin/blob/master/arc/mist.ini) file for his cores.
 - **Missing Jotego Cores** \
   Some .mra files in the Jotego repository refer missing .rbf files in the [mist](https://github.com/jotego/jtbin/tree/master/mist) or [sidi](https://github.com/jotego/jtbin/tree/master/sidi) folders (->[issue](https://github.com/jotego/jtbin/issues/345)): \
    - `jtaliens.rbf`, `jtsimson.rbf`, `jttmnt.rbf`, `jttwin16.rbf`: \

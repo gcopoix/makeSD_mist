@@ -45,7 +45,7 @@
 				"cwd": "${workspaceFolder}",
 				"args": [
 					"-s", "${input:fpga}",
-					"-d", "${workspaceFolder}/Linux/SD/${input:fpga}",
+					"-d", "./Linux/SD/${input:fpga}"
 				],
 				"terminalKind": "integrated",
 			},
@@ -57,7 +57,7 @@
 				"cwd": "${cwd}",
 				"args": [
 					"-s", "${input:fpga}",
-					"-d", "${workspaceFolder}/Windows/SD/${input:fpga}",
+					"-d", "./Windows/SD/${input:fpga}"
 				],
 			},
 		],
