@@ -195,7 +195,9 @@ copy_latest_core() {
   local rbf=$(cd "$srcdir" && ls -1t *.rbf)
   if [ ! -z "$pattern" ]; then rbf=$(echo "$rbf" | grep -i "$pattern"); fi
   if [ ! -z "$exclude" ]; then rbf=$(echo "$rbf" | grep -v -i "$exclude"); fi
-  sdcopy "$srcdir/$(echo "$rbf" | head -1)" "$dstfile"
+  if [ ! -z "$rbf" ]; then
+    sdcopy "$srcdir/$(echo "$rbf" | head -1)" "$dstfile"
+  fi
 }
 
 
@@ -496,10 +498,12 @@ copy_jotego_arcade_cores() {
   local srcpath=$GIT_ROOT/jotego
   clone_or_update_git 'https://github.com/jotego/jtbin.git' "$srcpath"
 
-  # add non-official mist/sidi cores from somhi repo (not yet part of jotego binaries)
-  local jtname=$([[ $SYSTEM == 'mist' ]] && echo 'jtoutrun_MiST_230312' || echo 'jtoutrun_SiDi_20231108')
-  download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/$jtname.rbf" "$srcpath/$SYSTEM/jtoutrun.rbf"
-  download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/jtkiwi.rbf"  "$srcpath/$SYSTEM/"
+  if [ $SYSTEM != 'sidi128' ]; then
+    # add non-official mist/sidi cores from somhi repo (not yet part of jotego binaries)
+    local jtname=$([[ $SYSTEM == 'mist' ]] && echo 'jtoutrun_MiST_230312' || echo 'jtoutrun_SiDi_20231108')
+    download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/$jtname.rbf" "$srcpath/$SYSTEM/jtoutrun.rbf"
+    download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/jtkiwi.rbf"  "$srcpath/$SYSTEM/"
+  fi
 
   # ini file from jotego git
   #sdcopy "$srcpath/arc/mist.ini" "$dstroot/"
@@ -886,6 +890,7 @@ ql_roms()              { download_url 'https://github.com/mist-devel/mist-binari
                          cp -pu "$1/"*.rom "$2/"
                        }
 samcoupe_roms()        { sdcopy "$1/samcoupe.rom" "$2/"; }
+sidi128_arcade()       { makedir "$2/"; cp -pu "$1/"*.rbf "$2/"; }
 snes_roms()            { download_url 'https://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/SNES.zip' "$2/"
                          expand "$2/SNES.zip" "$2/"
                          download_url 'https://nesninja.com/downloadssnes/Super Mario World (U) [!].smc' "$2/roms/"
@@ -1045,6 +1050,7 @@ cores=(
  #"( 'Arcade/Jotego/jtgunsmoke_SiDi.rbf'              ''              'Arcade/Jotego/Gunsmoke'                            gunsmoke_roms        )"
  #"( 'Arcade/Jotego/jtvulgus_SiDi.rbf'                ''              'Arcade/Jotego/Vulgus'                              vulgus_roms          )"
  # Arcade: other
+  "( 'Arcade'                                         ''              'Arcade/arcade'                                     sidi128_arcade       )"
   "( 'Arcade/Alpha68k'                                ''              'Arcade/Alpha68k'                                                        )"
   "( 'Arcade/IremM72'                                 ''              'Arcade/IremM72'                                                         )"
   "( 'Arcade/IremM92'                                 ''              'Arcade/IremM92'                                                         )"
@@ -1127,8 +1133,11 @@ copy_sidi_cores() {
   local dstroot=$1  # $1: destination folder
   local testcore=$2 # $2: optional core for single test
 
+  local folder='SiDi';     if [ $SYSTEM == 'sidi128' ]; then folder='SiDi128'; fi
+  local exclude='sidi128'; if [ $SYSTEM == 'sidi128' ]; then exclude=''; fi
+
   echo -e "\n----------------------------------------------------------------------" \
-          "\nCopy SiDi Cores to '$dstroot'" \
+          "\nCopy $SYSTEM Cores to '$dstroot'" \
           "\n----------------------------------------------------------------------\n"
 
   local srcroot=$GIT_ROOT/SiDi/ManuFerHi
@@ -1153,7 +1162,7 @@ copy_sidi_cores() {
         for line in "${cores[@]}"; do
           eval "line=$line"
           dst=${line[0]}
-          src=${line[2]/'Arcade/'/"Arcade/SiDi/"}
+          src=${line[2]/'Arcade/'/"Arcade/$folder/"}
           hdl=${line[3]}
           if [ "$srcroot/Cores/$src" = "$dir" ]; then
             # support for optional testing of single specific core
@@ -1162,11 +1171,11 @@ copy_sidi_cores() {
             echo -e "\n${dir//$GIT_ROOT\//}"
             if [ "$dst" = "." ]; then
               # copy latest menu core and set hidden attribute to hide this core from menu
-              copy_latest_core "$dir" "$dstroot/$dst/core.rbf" 'sidi' 'sidi128'
+              copy_latest_core "$dir" "$dstroot/$dst/core.rbf" $SYSTEM $exclude
               set_hidden_attr "$dstroot/$dst/core.rbf"
             else
               # create destination folder, set system attribute for this subfolder to be visible in menu core and copy latest core
-              copy_latest_core "$dir" "$dstroot/$dst/$(basename "$dst").rbf" 'sidi' 'sidi128'
+              copy_latest_core "$dir" "$dstroot/$dst/$(basename "$dst").rbf" $SYSTEM $exclude
               set_system_attr "$dstroot/$dst"
             fi
             # optional rom handling
@@ -1184,7 +1193,7 @@ copy_sidi_cores() {
           for line in "${cores[@]}"; do
             eval "line=$line"
             dst=${line[0]}
-            src=${line[2]/'Arcade/'/"Arcade/SiDi/"}
+            src=${line[2]/'Arcade/'/"Arcade/$folder/"}
             hdl=${line[3]}
             if [ "$srcroot/Cores/$src" = "$rar" ]; then
               # support for optional testing of single specific core
@@ -1240,7 +1249,7 @@ check_sd_filesystem() {
 
 
 show_usage() {
-  echo -e "\nUsage: $0 [-d <destination SD drive or folder>] [-s <mist|sidi>] [-h]" \
+  echo -e "\nUsage: $0 [-d <destination SD drive or folder>] [-s <mist|sidi|sidi128>] [-h]" \
           "\nGenerate SD card content with Jotego cores/roms for specific FPGA platform." \
           "\n" \
           "\nOptional arguments:" \
@@ -1248,7 +1257,7 @@ show_usage() {
           "\n    Location where the target files should be generated." \
           "\n    If this option isn't specified, 'SD\sidi' will be used by default." \
           "\n -s <mist|sidi>" \
-          "\n    Set target system (mist or sidi)." \
+          "\n    Set target system (mist, sidi or sidi128)." \
           "\n    If this option isn't specified, 'sidi' will be used by default." \
           "\n -h" \
           "\n    Show this help text\n"
@@ -1260,7 +1269,7 @@ while getopts ':hs:d:' option; do
   case $option in
     d)  SD_ROOT=$OPTARG;;
     s)  SYSTEM=${OPTARG,,}
-        if [ $SYSTEM != 'sidi' ] && [ $SYSTEM != 'mist' ]; then
+        if [ $SYSTEM != 'mist' ] && [ $SYSTEM != 'sidi' ] && [ $SYSTEM != 'sidi128' ]; then
           echo -e "\n\e[1;31mInvalid target \"$SYSTEM\"!\e[0m"
           show_usage; exit 1
         fi;;
@@ -1297,12 +1306,13 @@ check_dependencies
 # copy_sidi_cores $SD_ROOT 'Console/Videopac'
 # copy_mist_cores $SD_ROOT 'Computer/Mattel Aquarius'
 # copy_sidi_cores $SD_ROOT 'Arcade/Jotego/TAITO TNZS'
+# copy_sidi_cores $SD_ROOT 'Arcade'
 # copy_mist_cores $SD_ROOT 'Arcade/NeoGeo'
 # copy_sorgelig_mist_cores "$SD_ROOT"
 # exit 0
 
 # start generating
-if [ $SYSTEM = 'sidi' ]; then
+if [ $SYSTEM = 'sidi' ] || [ $SYSTEM = 'sidi128' ]; then
   copy_sidi_cores "$SD_ROOT"
   copy_eubrunosilva_sidi_cores "$SD_ROOT"
 elif [ $SYSTEM = 'mist' ]; then

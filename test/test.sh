@@ -29,7 +29,7 @@ mkdir -p "$dstRoot"
 for scr in Linux/genSD.sh Windows/genSD.ps1; do
   # make copy of script
   cp -pu "$(dirname "${BASH_SOURCE[0]}")/../$scr" "$dstRoot/"
-  for sys in mist sidi; do
+  for sys in mist sidi sidi128; do
     #if [ $sys = 'sidi' ]; then continue; fi
     dstSys=$dstRoot/${scr##*.}/$sys
     echo -e "\n----------------------------------------------------------------------" \

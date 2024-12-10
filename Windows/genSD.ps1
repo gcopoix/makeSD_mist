@@ -282,8 +282,10 @@ function copy_latest_core {
   $options = @{ Path="$srcdir/*" }
   if ($pattern) { $options += @{ Include="*$pattern*.rbf" } } else { $options += @{ Include="*.rbf" } }
   if ($exclude) { $options += @{ Exclude="*$exclude*" } }
-  $latest = Get-ChildItem @options | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-  sdcopy $latest.fullname $dstfile
+  $rbf = Get-ChildItem @options | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  if ($rbf) {
+    sdcopy $rbf.fullname $dstfile
+  }
 }
 
 
@@ -581,9 +583,11 @@ function copy_jotego_arcade_cores {
   clone_or_update_git 'https://github.com/jotego/jtbin.git' $srcpath
 
   # additional non-official core from somhi repo (not yet part of jotego binaries)
-  $jtname = if ($SYSTEM -eq 'mist') {'jtoutrun_MiST_230312'} else {'jtoutrun_SiDi_20231108'}
-  download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/$jtname.rbf" "$srcpath/$SYSTEM/jtoutrun.rbf"
-  download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/jtkiwi.rbf"  "$srcpath/$SYSTEM/"
+  if ($SYSTEM -ne 'sidi128') {
+    $jtname = if ($SYSTEM -eq 'mist') {'jtoutrun_MiST_230312'} else {'jtoutrun_SiDi_20231108'}
+    download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/$jtname.rbf" "$srcpath/$SYSTEM/jtoutrun.rbf"
+    download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/jtkiwi.rbf"  "$srcpath/$SYSTEM/"
+  }
 
   # ini file from jotego git
   #sdcopy "$srcpath/arc/mist.ini" "$dstroot/"
@@ -975,6 +979,7 @@ function ql_roms            { param ( $1, $2 )
                               sdcopy "$1/*.rom" "$2/"
                             }
 function samcoupe_roms      { param ( $1, $2 ) sdcopy "$1/samcoupe.rom" "$2/" }
+function sidi128_arcade     { param ( $1, $2 ) makedir "$2/"; sdcopy "$1/*.rbf" "$2/" }
 function snes_roms          { param ( $1, $2 ) download_url 'https://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/SNES.zip' "$2/" | Out-Null
                               expand "$2/SNES.zip" "$2/"
                               download_url 'https://nesninja.com/downloadssnes/Super Mario World (U) [!].smc' "$2/roms/" | Out-Null
@@ -1138,6 +1143,7 @@ $cores=@(
  #( 'Arcade/Jotego/jtgunsmoke_SiDi.rbf',              '',              'Arcade/Jotego/Gunsmoke',                            'gunsmoke_roms'        ),
  #( 'Arcade/Jotego/jtvulgus_SiDi.rbf',                '',              'Arcade/Jotego/Vulgus',                              'vulgus_roms'          ),
  # Arcade: other
+  ( 'Arcade',                                         '',              'Arcade/arcade',                                     'sidi128_arcade'       ), # SiDi128 folder only
   ( 'Arcade/Alpha68k',                                '',              'Arcade/Alpha68k'                                                           ),
   ( 'Arcade/IremM72',                                 '',              'Arcade/IremM72'                                                            ),
   ( 'Arcade/IremM92',                                 '',              'Arcade/IremM92'                                                            ),
@@ -1215,8 +1221,11 @@ function copy_sidi_cores {
   param ( [string]$dstroot,   # $1: destination folder
           $testcore = $null ) # $2: optional core for single test
 
+  $folder='SiDi';     if ($SYSTEM -eq 'sidi128') { $folder='SiDi128' }
+  $exclude='sidi128'; if ($SYSTEM -eq 'sidi128') { $exclude='' }
+
   Write-Host "`r`n----------------------------------------------------------------------" `
-             "`r`nCopy SiDi Cores to `'$dstroot`'" `
+             "`r`nCopy $SYSTEM Cores to `'$dstroot`'" `
              "`r`n----------------------------------------------------------------------`r`n"
 
   $srcroot="$GIT_ROOT/SiDi/ManuFerHi"
@@ -1237,7 +1246,7 @@ function copy_sidi_cores {
         # check if in our list of cores
         foreach($item in $cores) {
           $dst = $item[0]
-          $src = $item[2].replace('Arcade/',"Arcade/SiDi/")
+          $src = $item[2].replace('Arcade/',"Arcade/$folder/") # SiDi Arcade folders are seperated between SiDi and SiDi128
           $hdl = $item[3]
           if ("$srcroot/Cores/$src" -eq $dir) {
             # support for optional testing of single specific core
@@ -1246,11 +1255,11 @@ function copy_sidi_cores {
             Write-Host "`r`n$($dir.Replace("$GIT_ROOT/",'')) ..."
             if ($dst -eq '.') {
               # copy latest menu core and set hidden attribute to hide this core from menu
-              copy_latest_core $dir "$dstroot/$dst/core.rbf" 'sidi' 'sidi128'
+              copy_latest_core $dir "$dstroot/$dst/core.rbf" $SYSTEM $exclude
               set_hidden_attr "$dstroot/$dst/core.rbf"
             } else {
               # create destination folder, set system attribute for this subfolder to be visible in menu core and copy latest core
-              copy_latest_core "$dir" "$dstroot/$dst/$($dst.Split('/')[-1]).rbf" 'sidi' 'sidi128'
+              copy_latest_core "$dir" "$dstroot/$dst/$($dst.Split('/')[-1]).rbf" $SYSTEM $exclude
               set_system_attr "$dstroot/$dst"
             }
             # optional rom handling
@@ -1267,7 +1276,7 @@ function copy_sidi_cores {
           # check if in our list of cores
           foreach($item in $cores) {
             $dst = $item[0]
-            $src = $item[2].replace('Arcade/',"Arcade/SiDi/")
+            $src = $item[2].replace('Arcade/',"Arcade/$folder/")
             $hdl = $item[3]
             if ("$srcroot/Cores/$src" -eq $rar) {
               # support for optional testing of single specific core
@@ -1301,7 +1310,7 @@ function copy_sidi_cores {
 
 
 function show_usage {
-  Write-Host "`r`nUsage: genSD [-d <destination SD drive or folder>] [-s <mist|sidi>] [-h]" `
+  Write-Host "`r`nUsage: genSD [-d <destination SD drive or folder>] [-s <mist|sidi|sidi128>] [-h]" `
              "`r`nGenerate SD card content with cores/roms for specific FPGA platform." `
              "`r`n" `
              "`r`nOptional arguments:" `
@@ -1309,7 +1318,7 @@ function show_usage {
              "`r`n    Location where the target files should be generated." `
              "`r`n    If this option isn't specified, `'SD/sidi`' will be used by default." `
              "`r`n -s <mist|sidi>" `
-             "`r`n    Set target system (mist or sidi)." `
+             "`r`n    Set target system (mist, sidi or sidi128)." `
              "`r`n    If this option isnt specified, `'sidi`' will be used by default." `
              "`r`n -h" `
              "`r`n    Show this help text`r`n"
@@ -1323,7 +1332,7 @@ for ( $i = 0; $i -lt $($args.count); $i+=2 ) {
   Switch($($args[$i])) {
     '-d'    { $SD_ROOT=($($args[$i+1]) | replace-slash) }
     '-s'    { $SYSTEM = $($args[$i+1]).ToLower()
-              if (($SYSTEM -ne 'sidi') -and ($SYSTEM -ne 'mist')) {
+              if (($SYSTEM -ne 'mist') -and ($SYSTEM -ne 'sidi') -and ($SYSTEM -ne 'sidi128')) {
                 Write-Host -ForegroundColor red "Invalid target `'$SYSTEM`'!"
                 show_usage; exit 1
               }
@@ -1352,12 +1361,13 @@ check_dependencies
 # download_url 'https://raw.githubusercontent.com/Gehstock/Mist_FPGA_Cores/master/Arcade_MiST/Konami Scramble Hardware/Scramble.rbf' '/tmp/'
 # process_mra '/tmp/calipso.mra' . '/tmp'
 # copy_mist_cores $SD_ROOT 'Console/Videopac'
+# copy_sidi_cores $SD_ROOT 'Arcade'
 # copy_mist_cores $SD_ROOT 'Arcade/Neogeo'
 # copy_sidi_cores $SD_ROOT 'Arcade/Jotego/TAITO TNZS'
 # exit 0
 
 # start generating
-if ($SYSTEM -eq 'sidi') {
+if (($SYSTEM -eq 'sidi') -or (($SYSTEM -eq 'sidi128'))) {
   copy_sidi_cores $SD_ROOT
   copy_eubrunosilva_sidi_cores $SD_ROOT
 } elseif ($SYSTEM -eq 'mist') {

@@ -1,6 +1,6 @@
 # Script to initialize an SD card for MiST, SiDi and SiDi128 FPGA retro board
 
-This script initializes or updates the SD cards for either a [MiST](https://github.com/mist-devel/mist-board/wiki) or [SiDi](https://github.com/ManuFerHi/SiDi-FPGA/wiki) FPGA retro system. \
+This script initializes or updates the SD cards for either a [MiST](https://github.com/mist-devel/mist-board/wiki), [SiDi](https://github.com/ManuFerHi/SiDi-FPGA/wiki#sidi-board) or [SiDi128](https://github.com/ManuFerHi/SiDi-FPGA/wiki#sidi128-board) FPGA retro system. \
 It tries to create a complete as possible collection of cores and their required ROM files to get an out-of-the-box working SD card. \
 There are seperate scripts for [Linux](Linux) and [Windows](Windows) hosts. \
 With PowerShell [installed](https://learn.microsoft.com/de-de/powershell/scripting/install/installing-powershell-on-linux) on a Linux system the Windows [genSD.ps1](Windows/genSD.ps1) script is executable on a Linux system too.
@@ -10,11 +10,11 @@ Thanks to all these contributors for their work (see [links to repositories](#Li
 
 After executing this script appr.
 
-| |MiST|SiDi|
-|---|---|---|
-|.rbf|~255|~140|
-|.arc|~1320|~940|
-|.rom|~1360|~970|
+| |MiST|SiDi|SiDi128|
+|---|---:|---:|---:|
+|.rbf|~255|~140|~180|
+|.arc|~1320|~940|~1090|
+|.rom|~1360|~970|~1120|
 
 files are collected/generated.
 
@@ -28,12 +28,12 @@ or use a folder on HDD with the same available disk space
 ## Usage
 simply call the script with minor parameters:
 ```
-genSD [-s <mist|sidi>] [-d <destination SD drive or folder>]
+genSD [-s <mist|sidi|sidi128>] [-d <destination SD drive or folder>]
 ```
 with
 option|description|example
 ---|---|---
--s|Target system (mist or sidi).<br>If this option isn't specified, `sidi` will be used by default.|-s mist<br>-s sidi
+-s|Target system (mist or sidi).<br>If this option isn't specified, `sidi` will be used by default.|-s mist<br>-s sidi<br>-s sidi128
 -d|Destination folder the target folders and files are generated.<br>If this option isn't specified, `SD\sidi` will be used by default.|-d /media/SD-Card<br>-d E:
 -h|Show some help text.|-h
 
@@ -49,6 +49,10 @@ option|description|example
 - Initialize SD card for SiDi, SD card in drive E: (Windows)
 	```
 	genSD -s sidi -d E:
+	```
+- Initialize SD card for SiDi128, SD card in drive E: (Windows)
+	```
+	genSD -s sidi128 -d E:
 	```
 - Initialize SD card for MiST, create in subfolder (Windows)
 	```
@@ -70,7 +74,7 @@ This script fills/updates an SD card or folder with
 - ARM Firmware update file
 - default mist.ini
 
-to get an SD card which can be directly plugged into **MiST** or **SiDi**.
+to get an SD card which can be directly plugged into **MiST**, **SiDi** or **SiDi128**.
 
 The generated folder structure:
 ```
@@ -146,6 +150,7 @@ Threse scripts will
 - generate a destination set for
    - mist
    - sidi
+   - sidi128
 
 	with 2 runs:
    - 1st: run with empty cache (=initial run)
@@ -162,7 +167,7 @@ Additionally, a full log for each set is created in the 'SD#' folder with some s
 Additionally it is always a good idea to compare the Linux and Windows generated sets and logs. \
 Please keep in mind that each test execution will consume about 50GB of HDD space (the Linux version more as it will test the PowerShell script too) - not talking about the test run time (several hours)
 
-For testing/debugging specific cores, please refere some [test code](Linux/genSD.sh#L1287-1302) left disabled in the scripts.
+For testing/debugging specific cores, please refere some [test code](Linux/genSD.sh#L1296-1312) left disabled in the scripts.
 
 ## Known issues
 - **exFAT and DOS attributes (Linux version only)** \
@@ -174,7 +179,7 @@ For testing/debugging specific cores, please refere some [test code](Linux/genSD
   The windows Powershell script executed on a Windows system doesn't have this issue.
 - **.mra parsing of ROM files** \
   The ROM file names parsed from the `.mra` files refer a MAME version. \
-  Unfortunetly many ROMS, if fetched from their referred MAME version, don't match. I tried to find a best matching [set of download URLs](Linux/genSD.sh#L208-L248) incl. some [extra handling](Linux/genSD.sh#L250-L273), but for some ROM archives `mra` still complains about checksum mismatch or missing parts: \
+  Unfortunetly many ROMS, if fetched from their referred MAME version, don't match. I tried to find a best matching [set of download URLs](Linux/genSD.sh#L210-L250) incl. some [extra handling](Linux/genSD.sh#L252-L275), but for some ROM archives `mra` still complains about checksum mismatch or missing parts: \
   **ROMs not found**: \
   `mikiek.zip`, `rastsagaabl.zip` \
   **ROMs found, but with MD5 mismatch or missing parts**: \
@@ -199,10 +204,10 @@ For testing/debugging specific cores, please refere some [test code](Linux/genSD
      not enough ressources with MiST/SiDi
 - **MiSTer support** \
   Need to check the typical **MiSTer** setup and align with this script. \
-  Target systems of this script are **MiST** and **SiDi** (much cheaper than MiSTer).
+  Target systems of this script are **MiST**, **SiDi** and **SiDi128** (much cheaper than MiSTer).
 
-It would be nice if all cores would be built for both **MiST** and **SiDi** as the hardware features are nearly identical \
-(Thanks to Jotego for his Arcade repository with all releases for multiple FPGA platforms)
+It would be nice if all cores would be built for both **MiST** and **SiDi** (as the hardware features are nearly identical). **SiDi128** has even more resources so is be able to run all cores a **MiST** or **SiDi** does (and even more). \
+Thanks to Jotego for his [jtbin](http://github.com/jotego/jtbin.git) Arcade repository providing releases for multiple FPGA platforms.
 
 ## Links
 
