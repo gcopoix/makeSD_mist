@@ -173,7 +173,8 @@ For testing/debugging specific cores, please refere some [test code](Linux/genSD
 - **exFAT and DOS attributes (Linux version only)** \
   MiST and SiDi read FAT, FAT32 or exFAT (since [firmware_210525](https://github.com/mist-devel/mist-firmware/commit/56a1a0888f2448e6d1b5cf705d106a648709aff7)) fomatted SD cards. \
   The menu core [uses](http://github.com/mist-devel/mist-board/wiki/SDCardSetup#sd-card-with-multiple-fpga-cores) the system attribute (to show subfolders) and hidden attribute (to hide cores from menu). \
-  Linux can write these attributes on FAT or FAT32 drives and SD cards (`msdos`/`vfat` filesystem, written by `fatattr`), but not yet on exFAT formatted cards (`fuseblk` filesystem). \
+  Linux can write these attributes on FAT or FAT32 drives and SD cards (`msdos`/`vfat` filesystem, written by `fatattr`), for exFAT the exfattools are used. \
+  They require sudo privileges, and don't work reliable. \
   This will hopefully be updated in the future (or somebody has a hint how to modify these attributes on exFAT drives). \
   If the Linux script detects a non-FAT/FAT32 filesystem, it asks to continue as the folder attributes can't be set correctly. \
   The windows Powershell script executed on a Windows system doesn't have this issue.

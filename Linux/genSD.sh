@@ -41,7 +41,6 @@ check_dependencies() {
   if ! which unrar   1>/dev/null; then sudo apt install -y unrar;   fi
   if ! which 7z      1>/dev/null; then sudo apt install -y 7z;      fi
   if ! which grep    1>/dev/null; then sudo apt install -y grep;    fi
-  if ! which fatattr 1>/dev/null; then sudo apt install -y fatattr; fi
   if ! which git     1>/dev/null; then sudo apt install -y git;     fi
   if [ ! -x "$TOOLS_ROOT/mra" ]; then
     download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/"
@@ -88,15 +87,15 @@ clone_or_update_git() {
 set_system_attr() {
   local p=$1 # $1: path to file/directory
   while [ "$p" != "$SD_ROOT" ]; do
-    fatattr +s "$p" 2>/dev/null
+    eval $FATATTR_S "\"${p//"$SD_ROOT"/}\""
     p=$(dirname "$p")
   done
 }
 
 set_hidden_attr() {
-  # $1: path to file
+  local p=$1 # $1: path to file
 
-  fatattr +h "$1" 2>/dev/null
+  eval $FATATTR_H "\"${p//"$SD_ROOT"/}\""
 }
 
 makedir() {
@@ -1228,18 +1227,51 @@ copy_sidi_cores() {
 
 
 check_sd_filesystem() {
-  local dstroot=$1 # $1: destination folder
-
   # check filesystem of SD folder (only vfat and msdos supported by fatattr ioctrls - fuseblk update pending)
-  fs=$(stat -f -c %T "$dstroot")
+  fs=$(stat -f -c %T "$SD_ROOT")
   echo -e "\nFilesystem type of destination '$SD_ROOT' is '$fs'."
-  if [ "$fs" != 'vfat' ] && [ "$fs" != 'msdos' ] ; then
-    echo -e "-> some DOS file/folder attributes (SYSTEM/HIDDEN) can't be set correctly ('msdos' and 'vfat' only)" \
+  if [ "$fs" == 'vfat' ] || [ "$fs" == 'msdos' ] ; then
+    if ! which fatattr 1>/dev/null; then
+      sudo apt install -y fatattr
+    fi
+    FATATTR_S=fatattr +s
+    FATATTR_H=fatattr +h
+  elif [ "$fs" == 'exfat' ] || [[ "$fs" == *'0x2011bab0'* ]] ; then
+    # check if exfatattrib installable/installed (unfortunetly must be executed with sudo rights)
+    if apt-cache show exfatattrib; then
+      if ! which exfatattrib; then
+        sudo apt install -y exfatattrib
+      fi
+      FATATTR_H=sudo exfatattrib -i -d $(df /media/copoix/FF7F-721D | tail -n 1 | cut -d " " -f 1)
+      FATATTR_S=sudo exfatattrib -s -d $(df /media/copoix/FF7F-721D | tail -n 1 | cut -d " " -f 1)
+    else
+      if [ ! -x "$GIT_ROOT/exfat/attrib/exfatattrib" ]; then
+        echo '-> Manual build of exfattools required to set DOS system/hidden attributes.'
+        sudo apt install git autoconf automake pkg-config libfuse-dev gcc make
+        clone_or_update_git 'https://github.com/relan/exfat.git' "$GIT_ROOT/exfat"
+        (
+          cd "$GIT_ROOT/exfat"
+          autoreconf --install
+          ./configure
+          make
+          # don't install, we only need attrib/exfatattrib - handling in set_system_attr()/set_hidden_attr()
+          # sudo make install
+        )
+      fi
+      echo 1
+      FATATTR_H='sudo "$GIT_ROOT/exfat/attrib/exfatattrib" -i -d $(df "$SD_ROOT" | tail -n 1 | cut -d " " -f 1)'
+      FATATTR_S='sudo "$GIT_ROOT/exfat/attrib/exfatattrib" -s -d $(df "$SD_ROOT" | tail -n 1 | cut -d " " -f 1)'
+      echo 2
+    fi
+  else
+    prompt='Pick an option:'
+    options=('y' 'n')
+    echo -e "-> DOS file/folder attributes (SYSTEM/HIDDEN) can't be set correctly." \
             "\nContinue anyway?"
-    PS3='Pick an option:'
-    select opt in 'y' 'n'; do
+    PS3="$prompt "
+    select opt in "${options[@]}"; do
       case "$REPLY" in
-      'y'|'Y') echo ""; break;;
+      'y'|'Y') echo ''; FATATTR=''; break;;
       'n'|'N') false; exit 1;;
       *) echo "Invalid option (Y or N)";continue;;
       esac
@@ -1289,7 +1321,7 @@ echo -e "Creating destination folder '$SD_ROOT'..."
 makedir "$SD_ROOT"
 
 # check filesystem of SD folder
-check_sd_filesystem "$SD_ROOT"
+check_sd_filesystem
 # check required helper tools
 check_dependencies
 

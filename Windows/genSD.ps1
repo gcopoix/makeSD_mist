@@ -49,7 +49,6 @@ function check_dependencies {
     if (-not (&which unrar  )) { &sudo apt install -y unrar   };
     if (-not (&which 7z     )) { &sudo apt install -y 7z      };
     if (-not (&which git    )) { &sudo apt install -y git     };
-    if (-not (&which fatattr)) { &sudo apt install -y fatattr };
 
     if(-not ( Test-Path "$TOOLS_ROOT/mra")) {
       download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/" | Out-Null
@@ -60,7 +59,6 @@ function check_dependencies {
     $script:sevenzip = '7z'
     $script:touch    = 'touch'
     $script:git      = 'git'
-    $script:attrib   = 'fatattr'
     $script:mra      = "$TOOLS_ROOT/mra"
     $env:TEMP        = '/tmp'
   } else {
@@ -101,7 +99,6 @@ function check_dependencies {
     $script:sevenzip = "$TOOLS_ROOT/7z/7za.exe"
     $script:touch    = "$TOOLS_ROOT/touch.exe"
     $script:git      = "$TOOLS_ROOT/git/cmd/git.exe"
-    $script:attrib   = "attrib"
     $script:mra      = "$TOOLS_ROOT/mra.exe"
   }
 }
@@ -1309,6 +1306,43 @@ function copy_sidi_cores {
 }
 
 
+function check_sd_filesystem {
+  if ($isLinux) {
+    $fs = $(&stat -f -c %T "$SD_ROOT")
+    Write-Host "`r`nFilesystem type of destination `'$SD_ROOT`' is `'$fs`'"
+    if ($fs -eq 'vfat' -or $fs -eq 'msdos') {
+      if (-not $(&which fatattr)) {
+        &sudo apt install -y fatattr
+      }
+      $script:attrib = 'fatattr'
+    } elseif ($fs -eq 'exfat') {
+      # check if exfatattrib installable/installed
+      if ($(&apt-cache show exfatattrib)) {
+        if (-not $(&which exfatattrib)) {
+          &sudo apt install -y exfatattrib
+        }
+        $script:attrib = 'exfatattrib'
+      } else {
+        Write-Host '-> Manual build of exfattools required to set DOS system/hidden attributes.'
+        &sudo apt install git autoconf automake pkg-config libfuse-dev gcc make
+        clone_or_update_git 'https://github.com/relan/exfat.git' "$GIT_ROOT/exfat"
+        Push-Location
+          Set-Location "$GIT_ROOT/exfat"
+          &autoreconf --install
+          &./configure
+          &make
+        Pop-Location
+        # don't install, we only need attrib/exfatattrib - handling in set_system_attr()/set_hidden_attr()
+        # sudo make install
+        $script:attrib = "$GIT_ROOT/exfat/exfatattrib"
+      }
+    }
+  } else {
+    $script:attrib   = "attrib"
+  }
+}
+
+
 function show_usage {
   Write-Host "`r`nUsage: genSD [-d <destination SD drive or folder>] [-s <mist|sidi|sidi128>] [-h]" `
              "`r`nGenerate SD card content with cores/roms for specific FPGA platform." `
@@ -1352,6 +1386,9 @@ Write-Host "`r`n----------------------------------------------------------------
 
 Write-Host "Creating destination folder `'$SD_ROOT`' ..."
 makedir $SD_ROOT
+
+# check filesystem of SD folder and determine matching attrib command
+check_sd_filesystem
 
 # check required helper tools
 check_dependencies
