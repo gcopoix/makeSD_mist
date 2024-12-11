@@ -65,7 +65,7 @@ function check_dependencies {
     $env:TEMP        = '/tmp'
   } else {
     if (-not (Test-Path "$TOOLS_ROOT/unzip.exe" )) {
-      download_url 'https://stahlworks.com/dev/unzip.exe' "$TOOLS_ROOT/" | Out-Null
+      download_url 'http://stahlworks.com/dev/unzip.exe' "$TOOLS_ROOT/" | Out-Null
     }
     if (-not ( Test-Path "$TOOLS_ROOT/UnRAR.exe")) {
       download_url 'https://www.rarlab.com/rar/unrarw64.exe' "$TOOLS_ROOT/" | Out-Null
