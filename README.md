@@ -33,39 +33,39 @@ genSD [-s <mist|sidi|sidi128>] [-d <destination SD drive or folder>]
 with
 option|description|example
 ---|---|---
--s|Target system (mist or sidi).<br>If this option isn't specified, `sidi` will be used by default.|-s mist<br>-s sidi<br>-s sidi128
+-s|Target system (mist, sidi or sidi128).<br>If this option isn't specified, `sidi` will be used by default.|-s mist<br>-s sidi<br>-s sidi128
 -d|Destination folder the target folders and files are generated.<br>If this option isn't specified, `SD\sidi` will be used by default.|-d /media/SD-Card<br>-d E:
 -h|Show some help text.|-h
 
 ## Examples
 - Initialize SD card for MiST, SD card in drive E: (Windows)
-	```
-	genSD -s mist -d E:
-	```
+  ```
+  genSD -s mist -d E:
+  ```
 - Initialize SD card for MiST, SD card mounted to /media/SD-Card (Linux):
-	```
-	genSD.sh -s mist -d /media/SD-Card
-	```
+  ```
+  genSD.sh -s mist -d /media/SD-Card
+  ```
 - Initialize SD card for SiDi, SD card in drive E: (Windows)
-	```
-	genSD -s sidi -d E:
-	```
+  ```
+  genSD -s sidi -d E:
+  ```
 - Initialize SD card for SiDi128, SD card in drive E: (Windows)
-	```
-	genSD -s sidi128 -d E:
-	```
+  ```
+  genSD -s sidi128 -d E:
+  ```
 - Initialize SD card for MiST, create in subfolder (Windows)
-	```
-	genSD -s mist
-	```
+  ```
+  genSD -s mist
+  ```
 - Initialize SD card for MiST, create in subfolder (Linux)
-	```
-	genSD.sh -s mist
-	```
+  ```
+  genSD.sh -s mist
+  ```
 - called without parameters: Initialize a subfolder for SiDi (Linux)
-	```
-	genSD.sh
-	```
+  ```
+  genSD.sh
+  ```
 
 ## What is created
 This script fills/updates an SD card or folder with
@@ -103,17 +103,17 @@ The generated folder structure:
 │   ├── ...
 │   └── ...
 │
-├── <core subfolders unfortunately required in root folder>
+├── <subfolders unfortunately required by some cores in root folder>
 ├── ...
 │
-├── <additional rom files unfortunately required in root folder>
+├── <additional files unfortunately required by some cores in root folder>
 ├── ...
 │
-├── core.rbf      # <- menu core
+├── core.rbf      # <- menu core (named sidi128.rbf on SiDi128)
 └── firmware.upg  # latest ARM firmware update file
 ```
 The Arcade cores are installed with their required ROM files. \
-The information about the Arcade cores/roms is parsed from the `.mra` files (e.g. for [jotego's cores](https://github.com/jotego/jtbin/tree/master/mra)) and converted to `.arc` files together with the converted `.rom` file.
+The information about the Arcade cores/roms is parsed from the `.mra` files (e.g. for [jotego's cores](https://github.com/jotego/jtbin/tree/master/mra)) and [converted](https://github.com/mist-devel/mist-board/wiki/CoreDocArcade) to `.arc` files together with the created `.rom` file.
 
 ### Cache folders
 During installation, several temporary folders are created in the folder of the `genSD` script:
@@ -125,21 +125,29 @@ During installation, several temporary folders are created in the folder of the 
 │   │   ├── binaries     # MiST core repository
 │   │   ├── gehstock     # Gehstock MiST core repository
 │   │   └── sorgelig     # Sorgelig MiST core repositories
-│   └── SiDi
-│       ├── ManuFerHi    # ManuFerHi SiDi core repository
-│       └── eubrunosilva # eubrunosilva SiDi core repository
+│   ├── SiDi
+│   │   ├── ManuFerHi    # ManuFerHi SiDi core repository
+│   │   └── eubrunosilva # eubrunosilva SiDi core repository
+│   └── misc             # miscellaneous core support files, e.g. game archives, ...
+│       ├── Atari 2600
+│       ├── Next186
+│       └── ...
 └── tools                # required tools for executung this script
 ```
-It is a good idea to keep these folders as the next run will be much faster (git only needs to update and not clone, the download of the MAME ROMs can be skipped, ...). \
+It is a good idea to keep these folders as the next run will be much faster (git only needs to update and not clone, the download of the MAME ROMs and the other miscellaneous files can be skipped, ...). \
 This saves more than 10GB of data not being fetched again.
 
 ## Developing
-The [.vscode](.vscode) folder provides a workspace file for [Visual Studio Code](https://code.visualstudio.com) with pre-configured
+The project contains a [workspace file](https://code.visualstudio.com/docs/editor/workspaces) for [Visual Studio Code](https://code.visualstudio.com) with pre-configured
+- plugin [recommendations](genSD.code-workspace#L13-L16)
+   - [Bash Debugger](https://marketplace.visualstudio.com/items?itemName=rogalmic.bash-debug)
+   - [PowerShell Debugger](https://marketplace.visualstudio.com/items?itemName=ms-vscode.powershell)
+- script [debug/launch](genSD.code-workspace#L39-L63) settings
 
-- plugin recommendations
-   - Bash Debugger
-   - PowerShell Debugger
-- script debug environment
+Best practice here is to simply open the project by double-click on the [genSD.code-workspace](genSD.code-workspace) file. \
+VisualStudio Code will open the project and install/configure the required plugins.
+
+For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1307-L1327) left disabled in the scripts.
 
 A [configuration](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) file for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test.bat](test/test.bat#L15) script
 
@@ -152,11 +160,11 @@ Threse scripts will
    - sidi
    - sidi128
 
-	with 2 runs:
+  with each 2 runs:
    - 1st: run with empty cache (=initial run)
    - 2nd: run with cache and SD (=update run)
 
-Both folders should contain same content at the end (assuming no git or source repo update in between). \
+Both folders should contain the same content at the end (assuming no git or source repo update in between). \
 Additionally, a full log for each set is created in the 'SD#' folder with some summary at the end:
 - Missing core .rbf files
 - Missing MAME ROMs
@@ -166,8 +174,6 @@ Additionally, a full log for each set is created in the 'SD#' folder with some s
 
 Additionally it is always a good idea to compare the Linux and Windows generated sets and logs. \
 Please keep in mind that each test execution will consume about 50GB of HDD space (the Linux version more as it will test the PowerShell script too) - not talking about the test run time (several hours)
-
-For testing/debugging specific cores, please refere some [test code](Linux/genSD.sh#L1296-1312) left disabled in the scripts.
 
 ## Known issues
 - **exFAT and DOS attributes (Linux version only)** \
@@ -179,29 +185,30 @@ For testing/debugging specific cores, please refere some [test code](Linux/genSD
   The windows Powershell script executed on a Windows system doesn't have this issue.
 - **.mra parsing of ROM files** \
   The ROM file names parsed from the `.mra` files refer a MAME version. \
-  Unfortunetly many ROMS, if fetched from their referred MAME version, don't match. I tried to find a best matching [set of download URLs](Linux/genSD.sh#L210-L250) incl. some [extra handling](Linux/genSD.sh#L252-L275), but for some ROM archives `mra` still complains about checksum mismatch or missing parts: \
+  Unfortunetly many ROMS, if fetched from their referred MAME version, don't match. I tried to find a best matching [set of download URLs](Linux/genSD.sh#L212-L253) incl. some [extra handling](Linux/genSD.sh#L254-L278), but for some ROM archives `mra` still complains about checksum mismatch or missing parts: \
   **ROMs not found**: \
-  `mikiek.zip`, `rastsagaabl.zip` \
+  `avengersa.zip`, `bioniccbl2.zip`, `kchamp2p.zip`, `makaimurb.zip`, `outruneha.zip`, `pmonster.zip`, `pzloop2jd.zip`, `sbagman2.zip`, `sf2en.zip`, `sf2j17.zip`, `sf2qp2.zip`, `shinobi6.zip`, `timescan3.zip`
   **ROMs found, but with MD5 mismatch or missing parts**: \
+  btime.zip journey.zip xevious.zip clubpacm.zip combh.zip choplift.zip tokisens.zip ufosensi.zip wbml.zip
   `journey.rom`, `sxevious.rom`, `xevious.rom`, `clubpacm.rom`, `combh.rom`, `wbml.rom`, `lottofun.rom`, `spdball.rom`, `topgunbl.rom` \
-  Any support here is appreciated.
+  Any support her` is appreciated.
 - **ROMs #2** \
-  As this is an early version, there are lots of ROMs and Games to add/fix. \
-  But I think here we have a structured base to improve in the future.
+  As this is an early version, there are lots of ROMs and Games to add/fix - please give me a hint or pull request. \
+  I think here we have a structured base to improve in the future.
 - **files and folders required in root folder** \
   Many cores require special files and folders in the root of the SD-Card for their ROM/Game/... files. This makes in my opinion the folder structure a bit messy, especially if we want to have a full core distribution. \
   I would recommend the default root folder of a running core is by default the folder of the core, what would make a modular setup of the SD card much easier. \
-  May be somebody (or I myself) finds the time to introduce this feature in the [ARM firmware](http://github.com/mist-devel/mist-firmware).
+  May be somebody (or I myself) will find the time to introduce this feature in the [ARM firmware](http://github.com/mist-devel/mist-firmware).
 - **mist.ini** \
   Currently the script simply uses the default [mist.ini](https://github.com/mist-devel/mist-binaries/blob/master/cores/mist.ini) from the main repository. \
-  Generating a configuration with [optimal settings](http://github.com/mist-devel/mist-board/wiki/DocIni) for each core would be a nice additional feature for this script. \
+  Generating a configuration with [optimal settings](https://github.com/mist-devel/mist-board/wiki/Configuration-files-(.ini)) for each core would be a nice additional feature for this scripts. \
   Jotego provides an extended [mist.ini](https://github.com/jotego/jtbin/blob/master/arc/mist.ini) file for his cores.
 - **Missing Jotego Cores** \
-  Some .mra files in the Jotego repository refer missing .rbf files in the [mist](https://github.com/jotego/jtbin/tree/master/mist) or [sidi](https://github.com/jotego/jtbin/tree/master/sidi) folders (->[issue](https://github.com/jotego/jtbin/issues/345)): \
-   - `jtaliens.rbf`, `jtsimson.rbf`, `jttmnt.rbf`, `jttwin16.rbf`: \
-      in jotego beta phase, only available via Patreon/GitHub sponsors
+  Some .mra files in the Jotego repository refer missing .rbf files in the [mist](https://github.com/jotego/jtbin/tree/master/mist), [sidi](https://github.com/jotego/jtbin/tree/master/sidi) or [sidi128](https://github.com/jotego/jtbin/tree/master/sidi128) folders (->[issue](https://github.com/jotego/jtbin/issues/345)): \
    - `jtoutrun.rbf`, `jtkiwi.rbf`: \
-     not enough ressources with MiST/SiDi
+     not enough ressources with MiST/SiDi according Jotego, although Somhi offers builds for **MiST** and **SiDi (fetched [here](Linux/genSD.sh#L511-L514) in the scripts).
+   -  `jtflstory.rbf` `jtngpc.rbf` `jtngp.rbf` `jtriders.rbf` `jts18.rbf` `jtshanon.rbf` `jtshouse.rbf` `jttoki.rbf` `jtwc.rbf` `jtxmen.rbf`
+
 - **MiSTer support** \
   Need to check the typical **MiSTer** setup and align with this script. \
   Target systems of this script are **MiST**, **SiDi** and **SiDi128** (much cheaper than MiSTer).
@@ -223,7 +230,7 @@ Thanks to Jotego for his [jtbin](http://github.com/jotego/jtbin.git) Arcade repo
 - [Rok Krajnc's repositories](https://github.com/rkrajnc)
 
 ### SiDi repositories
-- [Manuel Fernández (ManuFerHi) SiDi cores](http://github.com/ManuFerHi/SiDi-FPGA.git)
+- [Manuel Fernández Higueras (ManuFerHi) SiDi/SiDi128 cores](http://github.com/ManuFerHi/SiDi-FPGA.git)
 - [Bruno Silvia (eubrunosilva) SiDi cores](http://github.com/eubrunosilva/SiDi.git)
 
 ### General repositories
