@@ -29,8 +29,11 @@ mkdir -p "$dstRoot"
 for scr in Linux/genSD.sh Windows/genSD.ps1; do
   # make copy of script
   cp -pu "$(dirname "${BASH_SOURCE[0]}")/../$scr" "$dstRoot/"
+
+  # test all supported FPGA systems
   for sys in mist sidi sidi128; do
-    #if [ $sys = 'sidi' ]; then continue; fi
+    # make sure we start with empty repositories/cache folders for fpga system
+    rm -rf "$dstRoot/repos"
     dstSys=$dstRoot/${scr##*.}/$sys
     echo -e "\n----------------------------------------------------------------------" \
             "\nTest '$scr' for '$sys' -> '$dstSys':" \
@@ -58,8 +61,7 @@ for scr in Linux/genSD.sh Windows/genSD.ps1; do
       ansifilter='s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g'
 
       # generate content to destination SD folder
-      echo 'y' | (time "$(dirname "${BASH_SOURCE[0]}")/Linux/$(basename $scr)" -s $sys -d "$dstSD" 2>&1)                    | sed -ru $ansifilter | tee "$dstSD/log.txt"
-      echo "$(dirname "${BASH_SOURCE[0]}")/Linux/$(basename $scr)" -s $sys -d "$dstSD"
+      echo 'y' | (time "$(dirname "${BASH_SOURCE[0]}")/Linux/$(basename $scr)" -s $sys -d "$dstSD" 2>&1) | sed -ru $ansifilter | tee "$dstSD/log.txt"
 
       # log error/warning results
       echo -e -n "\n\n\e[1mMissing core .rbf files:\n\e[1;31m"                                 | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
@@ -76,11 +78,11 @@ for scr in Linux/genSD.sh Windows/genSD.ps1; do
 
       # some statistics
       echo -e -n "\n\n\e[0;1mNumber of .rbf files\e[0m:" \
-                "$(find $dstSD -name '*.rbf' -printf '%f\n' | sort | uniq | wc -l)\n"         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+                 "$(find $dstSD -name '*.rbf' -printf '%f\n' | sort | uniq | wc -l)\n"         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
       echo -e -n "\e[0;1mNumber of .arc files\e[0m:" \
-                "$(find $dstSD -name '*.arc' -printf '%f\n' | sort | uniq | wc -l)\n"         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+                 "$(find $dstSD -name '*.arc' -printf '%f\n' | sort | uniq | wc -l)\n"         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
       echo -e -n "\e[0;1mNumber of .rom files\e[0m:" \
-                "$(find $dstSD -name '*.rom' -printf '%f\n' | sort | uniq | wc -l)\n"         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+                 "$(find $dstSD -name '*.rom' -printf '%f\n' | sort | uniq | wc -l)\n"         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
     done
     echo -e -n "\n\n\e[1mDiff of $dstSys/SD1 <-> $dstSys/SD2:\n\e[1;31m"                       | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
     diff -qr "$dstSys/SD1/" "$dstSys/SD2/"                                                     | sed -ru $ansifilter | tee -a "$dstSD/log.txt"

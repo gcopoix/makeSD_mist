@@ -26,9 +26,14 @@ rem create empty folder for test
 set dstRoot=%~dp0Windows
 rmdir /Q /S "!dstRoot!" 2>nul
 mkdir "%dstRoot%"
+
+rem make copy of script
 copy "%~dp0..\Windows\genSD.ps1" "%dstRoot%\" >nul
 
+rem test all supported FPGA systems
 for %%s in (mist sidi sidi128) do (
+  rem make sure we start with empty repositories/cache folders for fpga system
+  rmdir /Q /S "!dstRoot!\repos" 2>nul
   set dstSys=%dstRoot%\ps1\%%s
   echo.
   echo ----------------------------------------------------------------------
