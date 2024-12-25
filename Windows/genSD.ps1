@@ -791,7 +791,7 @@ function amiga_roms         { param($1,$2,$3)
                                        'https://archive.org/download/Older_Computer_Environments_and_Operating_Systems/Amiga.zip/Amiga/Amiga Kickstart Roms - Complete - TOSEC v0.04/KS-ROMs/Kickstart v3.1 rev 40.70 (1993)(Commodore)(A4000).rom'
                                       )
                               foreach ($f in $kicks) {
-                                download_url "$f" "$3/kick/" | Out-Null && sdcopy "$3/kick/$($f.Split('/')[-1])" "$2/kick/"
+                                download_url "$f" "$3/kick/" | Out-Null; sdcopy "$3/kick/$($f.Split('/')[-1])" "$2/kick/"
                               }
                               $adfs= @('https://archive.org/download/commodore-amiga-operating-systems-workbench/Workbench v3.1 rev 40.42 (1994)(Commodore)(M10)(Disk 1 of 6)(Install)[!].zip',
                                        'https://archive.org/download/commodore-amiga-operating-systems-workbench/Workbench v3.1 rev 40.42 (1994)(Commodore)(M10)(Disk 2 of 6)(Workbench)[!].zip',
@@ -801,12 +801,12 @@ function amiga_roms         { param($1,$2,$3)
                                        'https://download.freeroms.com/amiga_roms/a/agony.zip'
                                       )
                               foreach ($f in $adfs) {
-                                download_url "$f" "$3/adf/" | Out-Null && expand "$3/adf/$($f.Split('/')[-1])" "$2/adf/"
+                                download_url "$f" "$3/adf/" | Out-Null; expand "$3/adf/$($f.Split('/')[-1])" "$2/adf/"
                               }
                               $hdfs=@( 'https://archive.org/download/amigaromset/CommodoreAmigaRomset1.zip/MonkeyIsland2_v1.1_De_0077.hdf'
                                      )
                               foreach ($f in $hdfs) {
-                                download_url "$f" "$3/hdf/" | Out-Null && sdcopy "$3/hdf/$($f.Split('/')[-1])" "$2/hdf/"
+                                download_url "$f" "$3/hdf/" | Out-Null; sdcopy "$3/hdf/$($f.Split('/')[-1])" "$2/hdf/"
                               }
                               # use Kickstart 1.3 as default kick.rom
                               sdcopy "$2/kick/Kickstart v3.1 rev 40.68 (1993)(Commodore)(A1200).rom" "$SD_ROOT/kick.rom"
@@ -819,7 +819,7 @@ function amstrad_roms       { param ($1,$2,$3)
                                        'https://www.amstradabandonware.com/mod/upload/ams_de/games_disk/supermgp.zip'
                                       )
                               foreach ($f in $games) {
-                                download_url "$f" "$3/" | Out-Null && expand "$3/$($f.Split('/')[-1])" "$SD_ROOT/amstrad/"
+                                download_url "$f" "$3/" | Out-Null; expand "$3/$($f.Split('/')[-1])" "$SD_ROOT/amstrad/"
                               }
                             }
 function apogee_roms        { param ($1,$2,$3) sdcopy "$1/../extra/apogee.rom" "$2/" }
