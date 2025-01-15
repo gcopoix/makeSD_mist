@@ -19,11 +19,22 @@ After executing this script appr.
 files are collected/generated.
 
 ## Preconditions
+Get the scripts by
+- [downloading as .zip](https://github.com/gcopoix/makeSD_mist/archive/refs/heads/main.zip) file \
+  (Windows only, the Linux script execution flags would get lost)
+- [downloading as .tar](https://github.com/gcopoix/makeSD_mist/archive/refs/heads/main.tar.gz) file \
+  (Windows or Linux, the script execution flags are preserved here)
+- clone this repo (Windows or Linux)
+  ```
+  git clone https://github.com/gcopoix/makeSD_mist.git
+  ```
+
 The SD card must be
 - at least 32GB
 - formatted (FAT, FAT32 or exFAT)
 
 or use a folder on HDD with the same available disk space
+
 
 ## Usage
 simply call the script with minor parameters:
