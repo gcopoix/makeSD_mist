@@ -34,7 +34,7 @@ GIT_ROOT=$(dirname "${BASH_SOURCE[0]}")/repos
 TOOLS_ROOT=$(dirname "${BASH_SOURCE[0]}")/tools
 MAME_ROMS=$(dirname "${BASH_SOURCE[0]}")/repos/mame
 MISC_FILES=$(dirname "${BASH_SOURCE[0]}")/repos/misc
-
+SUDO_PW=""
 
 check_dependencies() {
   # get necessary helper tools (unzip, unrar, grep, git)
@@ -79,7 +79,7 @@ clone_or_update_git() {
   git -C "$dstpath/" ls-tree -r --name-only HEAD | while read f; do
     echo -e -n "\rsychronizing timestamps: \e[0K$f" >&2
     unixtime=$(git -C "$dstpath/" log -1 --format="%at" -- "$f" 2>/dev/null)
-    touchtime=$(date -d @$unixtime +'%Y%m%d%H%M.%S')
+    touchtime=$(date -d @$unixtime +'%Y%m%d%H%M.%S' 2>/dev/null)
     touch -t $touchtime "$dstpath/$f" 2>/dev/null
   done
   echo
@@ -89,14 +89,22 @@ clone_or_update_git() {
 set_system_attr() {
   local p=$1 # $1: path to file/directory
   while [ "$p" != "$SD_ROOT" ] && [ ${#p} -gt 1 ]; do
-    fatattr +s "$p" 2>/dev/null
+    if [ -n "$SUDO_PW" ]; then
+      echo "$SUDO_PW" | sudo -S fatattr +s "$p" 2>/dev/null
+    else
+      fatattr +s "$p" 2>/dev/null
+    fi
     p=$(dirname "$p")
   done
 }
 
 set_hidden_attr() {
   # $1: path to file
-  fatattr +h "$1" 2>/dev/null
+  if [ -n "$SUDO_PW" ]; then
+    echo "$SUDO_PW" | sudo -S fatattr +h "$1" 2>/dev/null
+  else
+    fatattr +h "$1" 2>/dev/null
+  fi
 }
 
 makedir() {
@@ -395,7 +403,7 @@ process_mra() {
   # shellcheck disable=SC2027
   echo -e "\n${mrafile//"$GIT_ROOT/"} ($name, $rbf, "${zips[*]}" ($mamever)):"
   if [ -z "$mamever" ]; then
-    echo -e "\e[1;32m  WARNING: Missing mameversion\e[0m"
+    echo -e "\e[1;33m  WARNING: Missing mameversion\e[0m"
     mamever='0000'
   fi
 
@@ -494,7 +502,7 @@ copy_jotego_arcade_cores() {
   # some lookup to sort games into sub folder (if they don't support the <platform> tag)
   local jtlookup=(
     "( 'CAPCOM'     'jt1942' 'jt1943' 'jtbiocom' 'jtbtiger' 'jtcommnd' 'jtexed'   'jtf1drm'  'jtgunsmk' 'jthige'
-                    'jtpang' 'jtrumble' 'jtsarms'  'jtsf'     'jtsectnz' 'jttrojan' 'jttora'   'jtvulgus' )"
+                    'jtpang' 'jtrumble' 'jtsarms' 'jtsf'    'jtsectnz' 'jttrojan' 'jttora'   'jtvulgus' )"
     "( 'CPS-2'      'jtcps2'  )"
     "( 'CPS-15'     'jtcps15' )"
     "( 'CPS-1'      'jtcps1'  )"
@@ -634,6 +642,32 @@ copy_sorgelig_mist_cores() {
     if [ ! -z "${item[3]}" ]; then
       ${item[3]} "$srcroot/$name/${item[2]}" "$dstroot/${item[0]}" "$MISC_FILES/$(basename "${item[0]}")"
     fi
+  done
+}
+
+
+copy_sebdel_mist_cores() {
+  local dstroot=$1 # $1: target folder
+
+  echo -e "\n----------------------------------------------------------------------" \
+          "\nCopy Sebastien Delestaing (sebdel) Cores for 'mist' to '$dstroot'" \
+          "\n----------------------------------------------------------------------\n"
+
+  local srcpath=$GIT_ROOT/MiST/sebdel
+  clone_or_update_git 'https://github.com/sebdel/mist-cores.git' "$srcpath"
+
+  local comp_cores=(
+   #"( 'dst folder'                    'path',                 )"
+    "( 'Computer/TRS80 Color Computer' 'trs80/output_files'    )"
+    "( 'Console/SD8'                   'sd8/output_files'      )" #??
+   # other sebdel core is already part of SiDi binaries repo
+   #"( 'Computer/Mattel Aquarius',      'aquarius/output_files' )"
+  )
+
+  local item; for item in "${comp_cores[@]}"; do
+    eval "item=$item"
+    copy_latest_file "$srcpath/${item[1]}" "$dstroot/${item[0]}/$(basename "${item[0]}").rbf" '*.rbf'
+    set_system_attr "$dstroot/${item[0]}"
   done
 }
 
@@ -824,7 +858,8 @@ c64_roms()             { sdcopy "$1/c64.rom" "$2/"
                          expand "$3/zaxxon.zip" "$SD_ROOT/c64/"
                          expand "$3/super_zaxxon.zip" "$SD_ROOT/c64/"
                        }
-coco_roms()            { sdcopy "$1/COCO3.ROM" "$2/coco3.rom"; }
+coco2_roms()           { copy_mra_arcade_cores "$1" '' "$2"; }
+coco3_roms()           { sdcopy "$1/COCO3.ROM" "$2/coco3.rom"; }
 enterprise_roms()      { sdcopy "$1/ep128.rom" "$2/"
                          if [ ! -f "$2/ep128.vhd" ]; then
                            download_url 'http://www.ep128.hu/Emu/Ep_ide192m.rar' "$3/"
@@ -911,6 +946,9 @@ pet2001_roms()         { download_url 'https://github.com/mist-devel/mist-binari
 plus_too_roms()        { download_url 'https://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/Plus_too/plus_too.rom' "$2/"
                          expand "$1/hdd_empty.zip" "$2/"
                        }
+psx_roms()             { download_url 'https://ps1emulator.com/SCPH1001.BIN' "$2/games/PSX/boot.rom"
+                         download_url 'https://github.com/MiSTer-devel/PSX_MiSTer/raw/main/memcard/empty.mcd' "$2/"
+                       }
 ql_roms()              { cp -pu "$1/"*.rom "$2/"
                          download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/ql/QL-SD.zip' "$3/"
                          expand "$3/QL-SD.zip" "$2/"
@@ -921,6 +959,9 @@ snes_roms()            { download_url 'https://archive.org/download/mister-conso
                          expand "$3/SNES.zip" "$2/"
                          download_url 'https://nesninja.com/downloadssnes/Super Mario World (U) [!].smc' "$3/"
                          sdcopy "$3/Super Mario World (U) [!].smc" "$SD_ROOT/snes/"
+                       }
+sourcerer_roms()       { download_url 'https://archive.org/download/year-based-collection-of-games-for-the-exidy-sorcerer-v-1.0/Year-Based Collection of Games for the Exidy Sorcerer v1.0.zip' "$3/"
+                         expand "$3/Year-Based Collection of Games for the Exidy Sorcerer v1.0.zip" "$2/"
                        }
 speccy_roms()          { sdcopy "$1/speccy.rom" "$2/"; }
 ti994a_roms()          { sdcopy "$1/TI994A.ROM" "$2/ti994a.rom"; }
@@ -990,8 +1031,10 @@ cores=(
   "( 'Computer/C16'                                   'c16'           'Computer/C16'                                      c16_roms             )"
   "( 'Computer/C64'                                   'fpga64'        'Computer/C64'                                      c64_roms             )"
   "( 'Computer/Coleco Adam'                           ''              'Computer/Adam'                                                          )"
-  "( 'Computer/Color Computer'                        ''              'Computer/Coco'                                     coco_roms            )"
+  "( 'Computer/Color Computer 2'                      'coco2'         'Computer/CoCo'                                     coco2_roms           )"
+  "( 'Computer/Color Computer 3'                      ''              'Computer/Coco3'                                    coco3_roms           )"
   "( 'Computer/Enterprise 128'                        'enterprise'    'Computer/ElanEnterprise'                           enterprise_roms      )"
+  "( 'Computer/Exidy Sorcerer'                        'sorcerer'      'Computer/Sorcerer'                                 sourcerer_roms       )"
   "( 'Computer/HT1080Z School Computer'               'ht1080z'       ''                                                                       )"
   "( 'Computer/Laser500'                              ''              'Computer/Laser500'                                 laser500_roms        )"
   "( 'Computer/Luxor ABC80'                           'abc80'         'Computer/ABC80'                                                         )"
@@ -1024,15 +1067,17 @@ cores=(
   "( 'Console/ColecoVision'                           'colecovision'  'Console/COLECOVISION'                                                   )"
   "( 'Console/Gameboy'                                'gameboy'       'Console/GAMEBOY'                                   gameboy_roms         )"
   "( 'Console/Genesis MegaDrive'                      'fpgagen'       'Console/GENESIS'                                                        )"
-  "( 'Console/Intellivision'                          'intellivision' ''                                                                       )"
+  "( 'Console/Intellivision'                          'intellivision' 'Console/Intellivison'                              intellivision_roms   )"
+  "( 'Console/NeoGeo'                                 'neogeo'        'Console/NEOGEO'                                    neogeo_roms          )"
   "( 'Console/Nintendo NES'                           'nes'           'Console/NES'                                       nes_roms             )"
   "( 'Console/Nintendo SNES'                          'snes'          'Console/SNES'                                      snes_roms            )"
   "( 'Console/PC Engine'                              'pcengine'      'Console/PCE'                                       turbogfx_roms        )"
   "( 'Console/SEGA MasterSystem'                      'sms'           'Console/SMS'                                                            )"
-  "( 'Console/SEGA Master System Nuked'               'sms-nuked'     ''                                                                       )"
+  "( 'Console/SEGA Master System Nuked'               'sms-nuked'     'Console/NukedSMS'                                                       )"
+  "( 'Console/SONY Playstation'                       ''              'Console/PSX'                                       psx_roms             )"
   "( 'Console/Vectrex'                                ''              'Console/Vectrex'                                   vectrex_roms         )"
   "( 'Console/Videopac'                               'videopac'      'Console/VIDEOPAC'                                  videopac_roms        )"
- # Arcade: Gehstock
+ # SiDi Arcade: Gehstock
   "( 'Arcade/Gehstock/Atari BW Raster Hardware'       ''              'Arcade/Gehstock/ATARI BW Raster Hardware.rar'                           )"
   "( 'Arcade/Gehstock/Atari Centipede Hardware'       ''              'Arcade/Gehstock/Atari Centipede Hardware.rar'                           )"
   "( 'Arcade/Gehstock/Atari Tetris'                   ''              'Arcade/Gehstock/Atari Tetris.rar'                                       )"
@@ -1046,21 +1091,21 @@ cores=(
   "( 'Arcade/Gehstock/Pacman Hardware'                ''              'Arcade/Gehstock/Pacman_hardware.rar'                                    )"
   "( 'Arcade/Gehstock/Phoenix Hardware'               ''              'Arcade/Gehstock/Phoenix_hardware.rar'                                   )"
   "( 'Arcade/Gehstock/Tetris'                         ''              'Arcade/Gehstock'                                                        )"
- # Arcade: Jotego fetched directly from Jotego jtbin repository
+ # SiDi Arcade: Jotego fetched directly from Jotego jtbin repository
  #"( 'Arcade/Jotego/jt1942_SiDi.rbf'                  ''              'Arcade/Jotego/1942'                                1942_roms            )"
  #"( 'Arcade/Jotego/jt1943_SiDi.rbf'                  ''              'Arcade/Jotego/1943'                                1943_roms            )"
  #"( 'Arcade/Jotego/jtcommando_SiDi.rbf'              ''              'Arcade/Jotego/Commando'                            commando_roms        )"
  #"( 'Arcade/Jotego/jtgng_SiDi.rbf'                   ''              'Arcade/Jotego/GhostnGoblins'                       ghost_n_goblins_roms )"
  #"( 'Arcade/Jotego/jtgunsmoke_SiDi.rbf'              ''              'Arcade/Jotego/Gunsmoke'                            gunsmoke_roms        )"
  #"( 'Arcade/Jotego/jtvulgus_SiDi.rbf'                ''              'Arcade/Jotego/Vulgus'                              vulgus_roms          )"
- # Arcade: other
+ # SiDi Arcade: other
   "( 'Arcade'                                         ''              'Arcade/arcade'                                     sidi128_arcade       )"
   "( 'Arcade/Alpha68k'                                ''              'Arcade/Alpha68k'                                                        )"
   "( 'Arcade/IremM72'                                 ''              'Arcade/IremM72'                                                         )"
   "( 'Arcade/IremM92'                                 ''              'Arcade/IremM92'                                                         )"
   "( 'Arcade/Jotego/TAITO TNZS'                       ''              'Arcade/JTKiwi'                                     tnzs_roms            )"
   "( 'Arcade/Konami Hardware'                         ''              'Arcade/Konami hardware/konami hardware.rar'                             )"
-  "( 'Arcade/NeoGeo'                                  'neogeo'        'Arcade/Neogeo'                                     neogeo_roms          )"
+  "( 'Arcade/NeoGeo'                                  ''              'Arcade/Neogeo'                                     neogeo_roms          )"
   "( 'Arcade'                                         ''              'Arcade/Nintendo hardware/Nintendo hardware.rar'    nintendo_sysattr     )"
   "( 'Arcade/Prehisle'                                ''              'Arcade/Prehisle'                                                        )"
 )
@@ -1241,35 +1286,54 @@ copy_sidi_cores() {
 check_sd_filesystem() {
   local dstroot=$1 # $1: destination folder
 
-  # check filesystem of SD folder (only vfat and msdos supported by fatattr ioctrls - fuseblk update pending)
-  local fs=$(stat -f -c %T "$dstroot")
+  # check filesystem of SD folder (only vfat and msdos supported by fatattr (exfat with root privileges))
+  # local fs=$(stat -f -c %T "$dstroot")
+  local fs=$(df --output="fstype" "$dstroot" | tail -1)
   echo -e "\nFilesystem type of destination '$SD_ROOT' is '$fs'."
-  if [ "$fs" != 'vfat' ] && [ "$fs" != 'msdos' ] ; then
-    echo -e "-> some DOS file/folder attributes (SYSTEM/HIDDEN) can't be set correctly ('msdos' and 'vfat' only)" \
-            "\nContinue anyway?"
-    PS3='Pick an option:'
-    select opt in 'y' 'n'; do
-      case "$REPLY" in
-      'y'|'Y') echo ""; break;;
-      'n'|'N') false; exit 1;;
-      *) echo "Invalid option (Y or N)";continue;;
-      esac
-    done
-  fi
+  case "$fs" in
+    msdos | vfat)
+      # on FAT/FAT32 volumes we are fine
+      true;;
+    exfat)
+      if [ "$(id -u)" -eq 0 ]; then
+        true # already running as root - we are fine for exFAT
+      else
+        echo -e "root privileges required to set DOS filesystem attributes on exFAT destination file system.\n"
+        while : ; do
+          echo -n "[sudo] Passwort für $USER: "
+          read -s SUDO_PW && echo ""
+          if echo "$SUDO_PW" | sudo -k -S true &>/dev/null; then
+            break
+          fi
+          echo -e "\e[1;31mERROR: Invalid sudo password! Please retry\e[0m\n"
+        done
+      fi;;
+    *)
+      echo -e "\nUnsupported file system." \
+              "\nContinue anyway (no support for DOS filesystem attributes) ?"
+      PS3='Pick an option:'
+      select opt in 'y' 'n'; do
+        case "$REPLY" in
+          'y'|'Y') break;;
+          'n'|'N') exit 1;;
+          *)       continue;;
+        esac
+      done
+  esac
 }
 
 
 show_usage() {
-  echo -e "\nUsage: $0 [-d <destination SD drive or folder>] [-s <mist|sidi|sidi128>] [-h]" \
+  echo -e "\nUsage: $0 [-s <mist|sidi|sidi128>] [-d <destination SD drive or folder>] [-h]" \
           "\nGenerate SD card content with Jotego cores/roms for specific FPGA platform." \
           "\n" \
           "\nOptional arguments:" \
-          "\n -d <destination SD (drive) folder>" \
-          "\n    Location where the target files should be generated." \
-          "\n    If this option isn't specified, 'SD\sidi' will be used by default." \
           "\n -s <mist|sidi>" \
           "\n    Set target system (mist, sidi or sidi128)." \
-          "\n    If this option isn't specified, 'sidi' will be used by default." \
+          "\n    This parameter is mandatory!" \
+          "\n -d <destination SD (drive) folder>" \
+          "\n    Location where the target files should be generated." \
+          "\n    If this option isn't specified, 'SD\<system>' will be used." \
           "\n -h" \
           "\n    Show this help text\n"
 }
@@ -1289,7 +1353,7 @@ while getopts ':hs:d:' option; do
         show_usage; exit 1;;
   esac
 done
-if [ -z "$SYSTEM" ];  then SYSTEM='sidi'; fi
+if [ -z "$SYSTEM" ];  then show_usage; exit 1; fi
 if [ -z "$SD_ROOT" ]; then SD_ROOT=$(dirname "${BASH_SOURCE[0]}")/SD/$SYSTEM; fi
 
 echo -e "\n----------------------------------------------------------------------"
@@ -1334,6 +1398,7 @@ elif [ $SYSTEM = 'mist' ]; then
   copy_mist_cores "$SD_ROOT"
   copy_sorgelig_mist_cores "$SD_ROOT"
   copy_gehstock_mist_cores "$SD_ROOT"
+  copy_sebdel_mist_cores "$SD_ROOT"
   copy_joco_mist_cores "$SD_ROOT"
 fi
 copy_jotego_arcade_cores "$SD_ROOT/Arcade/Jotego"

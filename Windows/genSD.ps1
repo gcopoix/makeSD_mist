@@ -38,7 +38,7 @@ $GIT_ROOT     = "$PSScriptRoot/repos"
 $TOOLS_ROOT   = "$PSScriptRoot/tools"
 $MAME_ROMS    = "$PSScriptRoot/repos/mame"
 $MISC_FILES   = "$PSScriptRoot/repos/misc"
-
+$SUDO_PW      = ""
 
 function check_dependencies {
   Write-Host "`r`nChecking required tools ..."
@@ -149,14 +149,22 @@ function set_system_attr {
   param ( [string]$1 ) # $1: path to file/directory
   $p = $1
   while ( ($p -ne $SD_ROOT) -and ($p.length -gt 1) ) {
-    &$script:attrib +s $p *>$null
+    if ($isLinux -and $script:SUDO_PW -ne '') {
+      &sh -c "echo $script:SUDO_PW | sudo -S $script:attrib +s $p 2>/dev/null"
+    } else {
+      &$script:attrib +s $p *>$null
+    }
     $p = Split-Path -Parent $p | replace-slash
   }
 }
 
 function set_hidden_attr {
   param ( [string]$1 ) # $1: path to file
-  &$script:attrib +h $1 *>$null
+  if ($isLinux -and $script:SUDO_PW -ne '') {
+    &sh -c "echo $script:SUDO_PW | sudo -S $script:attrib +h $1 2>/dev/null"
+  } else {
+    &$script:attrib +h $1 *>$null
+  }
 }
 
 
@@ -703,6 +711,31 @@ function copy_sorgelig_mist_cores {
 }
 
 
+function copy_sebdel_mist_cores {
+  param ( [string]$dstroot ) # $1: target folder
+
+  Write-Host "`r`n----------------------------------------------------------------------" `
+             "`r`nCopy Sebastien Delestaing (sebdel) Cores for 'mist' to `'$dstroot`'" `
+             "`r`n----------------------------------------------------------------------`r`n"
+
+  $srcpath="$GIT_ROOT/MiST/sebdel"
+  clone_or_update_git 'https://github.com/sebdel/mist-cores.git' "$srcpath"
+
+  $comp_cores=@(
+   #( 'dst folder',                    'path',                 ),
+    ( 'Computer/TRS80 Color Computer', 'trs80/output_files'    ),
+    ( 'Console/SD8',                   'sd8/output_files'      ) #??
+   # other sebdel core is already part of SiDi binaries repo
+   #( 'Computer/Mattel Aquarius',      'aquarius/output_files' ),
+  )
+
+  foreach($item in $comp_cores) {
+    copy_latest_file "$srcpath/$($item[1])" "$dstroot/$($item[0])/$($item[0].Split('/')[-1]).rbf" '*.rbf'
+    set_system_attr "$dstroot/$($item[0])"
+  }
+}
+
+
 function copy_joco_mist_cores {
   param ( [string]$dstroot ) # $1: target folder
 
@@ -899,7 +932,8 @@ function c64_roms           { param ($1,$2,$3)
                               expand "$3/zaxxon.zip" "$SD_ROOT/c64/"
                               expand "$3/super_zaxxon.zip" "$SD_ROOT/c64/"
                             }
-function coco_roms          { param ($1,$2,$3) sdcopy "$1/COCO3.ROM" "$2/coco3.rom" }
+function coco2_roms         { param ($1,$2,$3) copy_mra_arcade_cores "$1" '' "$2" }
+function coco3_roms         { sdcopy "$1/COCO3.ROM" "$2/coco3.rom" }
 function enterprise_roms    { param ($1,$2,$3)
                               sdcopy "$1/ep128.rom" "$2/"
                               if (-not ( Test-Path "$2/ep128.vhd")) {
@@ -1001,6 +1035,9 @@ function pet2001_roms       { param ($1,$2,$3) download_url 'https://github.com/
 function plus_too_roms      { param ($1,$2,$3) download_url 'https://github.com/ManuFerHi/SiDi-FPGA/raw/master/Cores/Computer/Plus_too/plus_too.rom' "$2/" | Out-Null
                               expand "$1/hdd_empty.zip" "$2/"
                             }
+function psx_roms           { param ($1,$2,$3) download_url 'https://ps1emulator.com/SCPH1001.BIN' "$2/games/PSX/boot.rom" | Out-Null
+                              download_url 'https://github.com/MiSTer-devel/PSX_MiSTer/raw/main/memcard/empty.mcd' "$2/"
+                            }
 function ql_roms            { param ($1,$2,$3)
                               sdcopy "$1/*.rom" "$2/"
                               download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/ql/QL-SD.zip' "$3/" | Out-Null
@@ -1012,6 +1049,9 @@ function snes_roms          { param ($1,$2,$3) download_url 'https://archive.org
                               expand "$3/SNES.zip" "$2/"
                               download_url 'https://nesninja.com/downloadssnes/Super Mario World (U) [!].smc' "$3/" | Out-Null
                               sdcopy "$3/Super Mario World (U) [!].smc" "$SD_ROOT/snes/"
+                            }
+function sourcerer_roms     { param ($1,$2,$3) download_url 'https://archive.org/download/year-based-collection-of-games-for-the-exidy-sorcerer-v-1.0/Year-Based Collection of Games for the Exidy Sorcerer v1.0.zip' "$3/" | Out-Null
+                              expand "$3/Year-Based Collection of Games for the Exidy Sorcerer v1.0.zip" "$2/"
                             }
 function speccy_roms        { param ($1,$2,$3) sdcopy "$1/speccy.rom" "$2/" }
 function ti994a_roms        { param ($1,$2,$3) sdcopy "$1/TI994A.ROM" "$2/ti994a.rom" }
@@ -1089,8 +1129,10 @@ $cores=@(
   ( 'Computer/C16',                                   'c16',           'Computer/C16',                                      'c16_roms'             ),
   ( 'Computer/C64',                                   'fpga64',        'Computer/C64',                                      'c64_roms'             ),
   ( 'Computer/Coleco Adam',                           '',              'Computer/Adam'                                                             ),
-  ( 'Computer/Color Computer',                        '',              'Computer/Coco',                                     'coco_roms'            ),
+  ( 'Computer/Color Computer 2',                      'coco2',         'Computer/CoCo',                                     'coco2_roms'           ),
+  ( 'Computer/Color Computer 3',                      '',              'Computer/Coco3',                                    'coco3_roms'           ),
   ( 'Computer/Enterprise 128',                        'enterprise',    'Computer/ElanEnterprise',                           'enterprise_roms'      ),
+  ( 'Computer/Exidy Sorcerer',                        'sorcerer',      'Computer/Sorcerer',                                 'sourcerer_roms'       ),
   ( 'Computer/HT1080Z School Computer',               'ht1080z',       ''                                                                          ),
   ( 'Computer/Laser500',                              '',              'Computer/Laser500',                                 'laser500_roms'        ),
   ( 'Computer/Luxor ABC80',                           'abc80',         'Computer/ABC80'                                                            ),
@@ -1123,15 +1165,17 @@ $cores=@(
   ( 'Console/ColecoVision',                           'colecovision',  'Console/COLECOVISION'                                                      ),
   ( 'Console/Gameboy',                                'gameboy',       'Console/GAMEBOY',                                   'gameboy_roms'         ),
   ( 'Console/Genesis MegaDrive',                      'fpgagen',       'Console/GENESIS'                                                           ),
-  ( 'Console/Intellivision',                          'intellivision', ''                                                                          ),
+  ( 'Console/Intellivision',                          'intellivision', 'Console/Intellivison',                              'intellivision_roms'   ),
+  ( 'Console/NeoGeo',                                 'neogeo',        'Console/NEOGEO',                                    'neogeo_roms'          ),
   ( 'Console/Nintendo NES',                           'nes',           'Console/NES',                                       'nes_roms'             ),
   ( 'Console/Nintendo SNES',                          'snes',          'Console/SNES',                                      'snes_roms'            ),
   ( 'Console/PC Engine',                              'pcengine',      'Console/PCE',                                       'turbogfx_roms'        ),
   ( 'Console/SEGA MasterSystem',                      'sms',           'Console/SMS'                                                               ),
-  ( 'Console/SEGA Master System Nuked',               'sms-nuked',     ''                                                                          ),
+  ( 'Console/SEGA Master System Nuked',               'sms-nuked',     'Console/NukedSMS'                                                          ),
+  ( 'Console/SONY Playstation',                       '',              'Console/PSX',                                       'psx_roms'             ),
   ( 'Console/Vectrex',                                '',              'Console/Vectrex',                                   'vectrex_roms'         ),
   ( 'Console/Videopac',                               'videopac',      'Console/VIDEOPAC',                                  'videopac_roms'        ),
- # Arcade: Gehstock
+ # SiDi Arcade: Gehstock
   ( 'Arcade/Gehstock/Atari BW Raster Hardware',       '',              'Arcade/Gehstock/ATARI BW Raster Hardware.rar'                              ),
   ( 'Arcade/Gehstock/Atari Centipede Hardware',       '',              'Arcade/Gehstock/Atari Centipede Hardware.rar'                              ),
   ( 'Arcade/Gehstock/Atari Tetris',                   '',              'Arcade/Gehstock/Atari Tetris.rar'                                          ),
@@ -1145,21 +1189,21 @@ $cores=@(
   ( 'Arcade/Gehstock/Pacman Hardware',                '',              'Arcade/Gehstock/Pacman_hardware.rar'                                       ),
   ( 'Arcade/Gehstock/Phoenix Hardware',               '',              'Arcade/Gehstock/Phoenix_hardware.rar'                                      ),
   ( 'Arcade/Gehstock/Tetris',                         '',              'Arcade/Gehstock'                                                           ),
- # Arcade: Jotego fetched directly from Jotego jtbin repository
+ # SiDi Arcade: Jotego fetched directly from Jotego jtbin repository
  #( 'Arcade/Jotego/jt1942_SiDi.rbf',                  '',              'Arcade/Jotego/1942',                                '1942_roms'            ),
  #( 'Arcade/Jotego/jt1943_SiDi.rbf',                  '',              'Arcade/Jotego/1943',                                '1943_roms'            ),
  #( 'Arcade/Jotego/jtcommando_SiDi.rbf',              '',              'Arcade/Jotego/Commando',                            'commando_roms'        ),
  #( 'Arcade/Jotego/jtgng_SiDi.rbf',                   '',              'Arcade/Jotego/GhostnGoblins',                       'ghost_n_goblins_roms' ),
  #( 'Arcade/Jotego/jtgunsmoke_SiDi.rbf',              '',              'Arcade/Jotego/Gunsmoke',                            'gunsmoke_roms'        ),
  #( 'Arcade/Jotego/jtvulgus_SiDi.rbf',                '',              'Arcade/Jotego/Vulgus',                              'vulgus_roms'          ),
- # Arcade: other
+ # SiDi Arcade: other
   ( 'Arcade',                                         '',              'Arcade/arcade',                                     'sidi128_arcade'       ), # SiDi128 folder only
   ( 'Arcade/Alpha68k',                                '',              'Arcade/Alpha68k'                                                           ),
   ( 'Arcade/IremM72',                                 '',              'Arcade/IremM72'                                                            ),
   ( 'Arcade/IremM92',                                 '',              'Arcade/IremM92'                                                            ),
   ( 'Arcade/Jotego/TAITO TNZS',                       '',              'Arcade/JTKiwi',                                     'tnzs_roms'            ),
   ( 'Arcade/Konami Hardware',                         '',              'Arcade/Konami hardware/konami hardware.rar'                                ),
-  ( 'Arcade/NeoGeo',                                  'neogeo',        'Arcade/Neogeo',                                     'neogeo_roms'          ),
+  ( 'Arcade/NeoGeo',                                  '',              'Arcade/Neogeo',                                     'neogeo_roms'          ),
   ( 'Arcade',                                         '',              'Arcade/Nintendo hardware/Nintendo hardware.rar',    'nintendo_sysattr'     ), # archive contains destination folder
   ( 'Arcade/Prehisle',                                '',              'Arcade/Prehisle'                                                           )
 )
@@ -1325,17 +1369,58 @@ function copy_sidi_cores {
 }
 
 
+function check_sd_filesystem {
+  param ( [string]$dstroot )  # $1: destination folder
+
+  if ($isLinux) {
+    # check filesystem of SD folder (only vfat and msdos supported by fatattr (exfat with root privileges))
+    # $fs = &stat -f -c %T $dstroot
+    $fs = &df --output="fstype" "$dstroot" | tail -1
+    Write-Host "`r`nFilesystem type of destination '$SD_ROOT' is '$fs'."
+    switch -regex ($fs) {
+      '(msdos)|(vfat)' {
+        # on FAT/FAT32 volumes we are fine
+      }
+      'exfat' {
+        if ((&id -u) -eq 0) {
+          # already running as root - we are fine for exFAT
+        } else {
+          Write-Host "root privileges required to write DOS filesystem attributes on exFAT destination file system."
+          while(1) {
+            $script:SUDO_PW = Read-Host -MaskInput "[sudo] Passwort für $env:USER "
+            if (&echo "$script:SUDO_PW" | sudo -k -S ls) {
+              break
+            }
+            Write-Host -ForegroundColor red "ERROR: Invalid sudo password! Please retry"
+          }
+        }
+      }
+      default {
+        Write-Host "`r`nUnsupported file system." `
+                   "`r`nContinue anyway (no support for DOS filesystem attributes) ?`r`n"
+        while($true) {
+          $reply = Read-Host -Prompt "Pick an option (Y or N)"
+          switch ($reply.ToLower()) {
+            'y' { return }
+            'n' { exit 1 }
+          }
+        }
+      }
+    }
+  }
+}
+
 function show_usage {
-  Write-Host "`r`nUsage: genSD [-d <destination SD drive or folder>] [-s <mist|sidi|sidi128>] [-h]" `
+  Write-Host "`r`nUsage: genSD [-s <mist|sidi|sidi128>] [-d <destination SD drive or folder>] [-h]" `
              "`r`nGenerate SD card content with cores/roms for specific FPGA platform." `
              "`r`n" `
              "`r`nOptional arguments:" `
-             "`r`n -d <destination SD (drive) folder>" `
-             "`r`n    Location where the target files should be generated." `
-             "`r`n    If this option isn't specified, `'SD/sidi`' will be used by default." `
              "`r`n -s <mist|sidi>" `
              "`r`n    Set target system (mist, sidi or sidi128)." `
-             "`r`n    If this option isnt specified, `'sidi`' will be used by default." `
+             "`r`n    This parameter is mandatory!" `
+             "`r`n -d <destination SD (drive) folder>" `
+             "`r`n    Location where the target files should be generated." `
+             "`r`n    If this option isn't specified, `'SD/<system>`' will be used." `
              "`r`n -h" `
              "`r`n    Show this help text`r`n"
 }
@@ -1345,7 +1430,7 @@ $progressPreference='silentlyContinue'
 
 # Parse commandline options
 for ( $i = 0; $i -lt $($args.count); $i+=2 ) {
-  Switch($($args[$i])) {
+  switch($($args[$i])) {
     '-d'    { $SD_ROOT=($($args[$i+1]) | replace-slash) }
     '-s'    { $SYSTEM = $($args[$i+1]).ToLower()
               if (($SYSTEM -ne 'mist') -and ($SYSTEM -ne 'sidi') -and ($SYSTEM -ne 'sidi128')) {
@@ -1358,7 +1443,7 @@ for ( $i = 0; $i -lt $($args.count); $i+=2 ) {
               show_usage; exit 1 }
   }
 }
-if ($SYSTEM.length  -eq 0) { $SYSTEM  = 'sidi' }
+if ($SYSTEM.length  -eq 0) { show_usage; exit 1 }
 if ($SD_ROOT.length -eq 0) { $SD_ROOT = "$PSScriptRoot/SD/$SYSTEM" }
 
 
@@ -1369,6 +1454,8 @@ Write-Host "`r`n----------------------------------------------------------------
 Write-Host "Creating destination folder `'$SD_ROOT`' ..."
 makedir $SD_ROOT
 
+# check filesystem of SD folder
+check_sd_filesystem "$SD_ROOT"
 # check required helper tools
 check_dependencies
 
@@ -1402,6 +1489,7 @@ if (($SYSTEM -eq 'sidi') -or (($SYSTEM -eq 'sidi128'))) {
   copy_mist_cores $SD_ROOT
   copy_sorgelig_mist_cores $SD_ROOT
   copy_gehstock_mist_cores $SD_ROOT
+  copy_sebdel_mist_cores $SD_ROOT
   copy_joco_mist_cores $SD_ROOT
 }
 copy_jotego_arcade_cores $SD_ROOT/Arcade/Jotego
