@@ -3,18 +3,19 @@
 # -- genSD.sh
 #    Generates or updates the folder structure for using in SiDi or MiST FPGA system.
 #    Picked cores:
-#    - SiDi repository (https://github.com/ManuFerHi/SiDi-FPGA.git)
-#    - MiST repository (https://github.com/mist-devel/mist-binaries.git)
-#    - Marcel Gehstock MiST repository (https://github.com/Gehstock/Mist_FPGA_Cores.git)
-#    - Alexey Melnikov (sorgelig) MiST repositories (https://github.com/sorgelig/<...>.git)
+#    - SiDi repository (https://github.com/ManuFerHi/SiDi-FPGA)
+#    - MiST repository (https://github.com/mist-devel/mist-binaries)
+#    - Marcel Gehstock MiST repository (https://github.com/Gehstock/Mist_FPGA_Cores)
+#    - Alexey Melnikov (sorgelig) MiST repositories (https://github.com/sorgelig/<...>)
 #    - Jozsef Laszlo MiST cores (https://joco.homeserver.hu/fpga)
 #    - Nino Porcino (nippur72) cores (https://github.com/nippur72)
 #    - Petr (PetrM1) cores (https://github.com/PetrM1)
-#    - Jose Tejada (jotego) MiST/SiDi Arcade repository (https://github.com/jotego/jtbin.git)
-#    - eubrunosilva SiDi repositoriy (https://github.com/eubrunosilva/SiDi.git)
+#    - Jose Tejada (jotego) MiST/SiDi Arcade repository (https://github.com/jotego/jtbin)
+#    - Bruno Silvia (eubrunosilva) SiDi repository (https://github.com/eubrunosilva/SiDi)
+#    - Sebastien Delestaing (sebdel) MiST repository (https://github.com/sebdel/mist-cores)
 #    Additionally the required MAME ROMs are fetched too to generate a working SD card.
 #
-#    SiDi wiki: https://github.com/ManuFerHi/SiDi-FPGA.git
+#    SiDi/SiDi128 wiki: https://github.com/ManuFerHi/SiDi-FPGA/wiki
 #    MiST wiki: https://github.com/mist-devel/mist-board/wiki
 #
 # other SD card creation/update scripts:
@@ -203,7 +204,7 @@ copy_latest_file() {
   if [ -z "$exclude" ]; then
     local files=$(find $srcdir -maxdepth 1 -type f -iname $pattern -printf '%T@ %p\n')
   else
-    local files=$(find $srcdir -maxdepth 1 -type f -iname $pattern -printf '%T@ %p\n' -not -iname $exclude)
+    local files=$(find $srcdir -maxdepth 1 -type f -iname $pattern -not -iname $exclude -printf '%T@ %p\n')
   fi
   files=$(echo "$files" | sort -k 1nr | head -1 | cut -d ' ' -f 2-)
   if [ ! -z "$files" ]; then
@@ -214,101 +215,132 @@ copy_latest_file() {
 
 download_mame_roms() {
   local dstroot=$1      # $1: destination directory
-  local ver=$2          # $2: mameversion info from .mra file
-  local zips=("${@:3}") # $3: array with zip archive name(s), e.g. ('single.zip') or ('file1.zip' 'file2.zip')
+  local zips=("${@:2}") # $2: array with zip archive name(s), e.g. ('single.zip') or ('file1.zip' 'file2.zip')
 
-  # referred by -mra files: 251, 245, 240, 229, 224, 222, 220, 218, 193
+  # different default MAME download URLs - if more than 1 URL is enabled, the download will try top down
   local mameurls=(
-   #"( 'mame-version' 'base url (incl. '/', will be extended by .zip name)'                                              )"
-   #"( '0185' 'https://archive.org/download/MAME_0.185_ROMs_merged/MAME_0.185_ROMs_merged.zip/MAME 0.185 ROMs (merged)/' )"
-   #"( '0193' 'https://archive.org/download/MAME0.193RomCollectionByGhostware/'                                          )"
-   #"( '0193' 'https://archive.org/download/MAME_0.193_ROMs_merged/MAME_0.193_ROMs_merged.zip/MAME 0.193 ROMs (merged)/' )"
-   #"( '0197' 'https://archive.org/download/MAME_0.197_ROMs_merged/MAME_0.197_ROMs_merged.zip/MAME 0.197 ROMs (merged)/' )"
-   #"( '0201' 'https://archive.org/download/MAME201_Merged/MAME 0.201 ROMs (merged)/'                 )"
-   #"( '0202' 'https://archive.org/download/MAME_0.202_Software_List_ROMs_merged/'                    )" # only update
-   #"( '0205' 'https://archive.org/download/mame205T7zMerged/'                                        )"
-   #"( '0211' 'https://archive.org/download/MAME211RomsOnlyMerged/'                                   )"
-   #"( '0212' 'https://archive.org/download/MAME212RomsOnlyMerged/'                                   )"
-   #"( '0213' 'https://archive.org/download/MAME213RomsOnlyMerged/'                                   )"
-   #"( '0214' 'https://archive.org/download/MAME214RomsOnlyMerged/'                                   )"
-   #"( '0215' 'https://archive.org/download/MAME215RomsOnlyMerged/'                                   )"
-    "( '0216' 'https://archive.org/download/MAME216RomsOnlyMerged/'                                   )"
-    "( '0218' 'https://archive.org/download/MAME218RomsOnlyMerged/MAME 0.218 ROMs (merged).zip/'      )"
-    "( '0220' 'https://archive.org/download/MAME220RomsOnlyMerged/'                                   )"
-   #"( '0221' 'https://archive.org/download/MAME221RomsOnlyMerged/'                                   )"
-   #"( '0221' 'https://archive.org/download/mame-0.221-roms-merged/'                                  )"
-   #"( '0221' 'https://archive.org/download/mame_0.221_roms/mame_0.221_roms.zip/'                     )"
-   #"( '0222' 'https://archive.org/download/MAME222RomsOnlyMerged/'                                   )"
-   #"( '0223' 'https://archive.org/download/MAME223RomsOnlyMerged/'                                   )"
-    "( '0224' 'https://archive.org/download/mame0.224/'                                               )"
-   #"( '0224' 'https://archive.org/download/MAME_0.224_ROMs_merged/'                                  )"
-    "( '0229' 'https://archive.org/download/mame.0229/'                                               )"
-   #"( '0236' 'https://archive.org/download/mame-0.236-roms-split/MAME 0.236 ROMs (split)/'           )"
-   #"( '0240' 'https://archive.org/download/mame.0240/'                                               )"
-   #"( '0245' 'https://archive.org/download/mame.0245.revival/'                                       )"
-   #"( '0245' 'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/'           )"
-   #"( '0251' 'https://archive.org/download/mame251/'                                                 )"
-   #"( '0252' 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.252 ROMs (merged)/' )"
-   #"( '0254' 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.254 ROMs (merged)/' )"
-   #"( '0256' 'https://archive.org/download/mame-chds-roms-extras-complete/MAME 0.256 ROMs (merged)/' )"
-    "( '0259' 'https://archive.org/download/mame-merged/mame-merged/'                                 )"
-   #"( '0271' 'https://bda.retroroms.net/downloads/mame/mame-0271-full/'                              )" # login required
-   #"( '9999' 'https://bda.retroroms.net/downloads/mame/currentroms/'                                 )" # login required
-    "( '9999' 'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/'                   )"
-    "( '9999' 'https://downloads.retrostic.com/roms/'                                                 )"
-    "( '9999' 'https://archive.org/download/fbnarcade-fullnonmerged/arcade/'                          )"
-    "( '9999' 'https://www.doperoms.org/files/roms/mame/GETFILE_'                                     )" # without '/', archive.zip leads to 'GETFILE_archive.zip')
+   #'https://mdk.cab/download/split/'
+   #'https://archive.org/download/MAME0.193RomCollectionByGhostware/'
+   #'https://archive.org/download/MAME_0.193_ROMs_merged/MAME_0.193_ROMs_merged.zip/MAME 0.193 ROMs (merged)/'
+   #'https://archive.org/download/mame205T7zMerged/'
+   #'https://archive.org/download/MAME211RomsOnlyMerged/'
+   #'https://archive.org/download/MAME212RomsOnlyMerged/'
+   #'https://archive.org/download/MAME213RomsOnlyMerged/'
+   #'https://archive.org/download/MAME214RomsOnlyMerged/'
+   #'https://archive.org/download/MAME215RomsOnlyMerged/'
+   #'https://archive.org/download/MAME216RomsOnlyMerged/'
+   #'https://archive.org/download/MAME220RomsOnlyMerged/'
+   #'https://archive.org/download/MAME221RomsOnlyMerged/'
+   #'https://archive.org/download/mame-0.221-roms-merged/'
+   #'https://archive.org/download/mame_0.221_roms/mame_0.221_roms.zip/'
+   #'https://archive.org/download/MAME222RomsOnlyMerged/'
+   #'https://archive.org/download/MAME223RomsOnlyMerged/'
+   #'https://archive.org/download/mame0.224/'
+   #'https://archive.org/download/MAME_0.224_ROMs_merged/'
+   #'https://archive.org/download/HBmame0.229-romsmerged/'
+    'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/'
+   #'https://myrient.erista.me/files/Internet Archive/chadmaster/fbnarcade-fullnonmerged/arcade/'
+   #'https://archive.org/download/mame251/'
+   #'https://myrient.erista.me/files/Internet Archive/rompacker/mame-chds-roms-extras-complete/MAME 0.256 ROMs (merged)/'
+    'https://myrient.erista.me/files/Internet Archive/rompacker/mame-chds-roms-extras-complete/MAME - Update ROMs (v0.257 to v0.258)/'
+   #'https://downloads.consoleroms.com/roms/'
+   #'https://www.doperoms.org/files/roms/mame/GETFILE_' # without '/', archive.zip leads to 'GETFILE_archive.zip')
   )
-  # list of ROMs not downloadable from URLs above, using dedicated download URLs
+  # list of ROMs which need to be downloaded from other URL than the MAME URLs enabled above
+  local urllookup=(
+     #"( '<base url>' 'zip1' '<zip2>' '<...>' '<zipn>' )"
+      "( 'https://archive.org/download/MAME_0.149_ROMs/MAME_0.149_ROMs.zip/MAME 0.149 ROMs/'
+               'devilfsg.zip' )"
+      "( 'https://archive.org/download/MAME216RomsOnlyMerged/'
+               'galaga.zip'   'gberet.zip'     'amidar.zip'    'frogger.zip'   'mimonkey.zip'  'scramble.zip' 'twotiger.zip'
+               'dotron.zip'   'pacnpal.zip'    'dkong3.zip'    'radarscp.zip'  'pleiads.zip'   'choplift.zip' 'starjack.zip'
+               'congo.zip'    'alienar.zip'    'bubbles.zip'   'joust.zip'     'robotron.zip'  'sinistar.zip' 'splat.zip'
+               'stargate.zip' 'dragon_fdc.zip' 'centiped.zip'  'hharry.zip'    'luctoday.zip'  'mooncrst.zip' 'theend.zip'
+               'victoryc.zip' 'finalizr.zip'   'devilfsh.zip'  'jackal.zip'    'sbasebal.zip'  'dragon32.zip' 'defender.zip'
+               'timescan.zip' 'makaimurg.zip'  'midres.zip'    'trojan.zip'    'mrdo.zip'      'gng.zip' )"
+      "( 'https://myrient.erista.me/files/Internet Archive/chadmaster/fbnarcade-fullnonmerged/arcade/'
+               'airduelm72.zip' 'avengersa.zip' 'avengersb.zip' 'avengersc.zip' 'gunsmokeuc.zip' 'hyprolyma.zip' 'flstoryo.zip'
+               'nemoja.zip' 'sf2ceec.zip' 'trojanjo.zip' 'wwfsstarc.zip' 'simpsons4pe2.zip' 'mpumpkin.zip' )"
+      "( 'https://myrient.erista.me/files/Internet Archive/rompacker/mame-chds-roms-extras-complete/MAME 0.256 ROMs (merged)/'
+               'avengers.zip' 'coco.zip' 'coco_fdc.zip' 'pang.zip' 'xevious.zip' )"
+      "( 'https://www.doperoms.org/files/roms/mame/GETFILE_'
+               'airduel.zip' 'irrmaze.zip' )"
+      "( 'https://mdk.cab/download/split/'
+               'mpumpkin.zip' )"
+      "( 'https://github.com/Abdess/retroarch_system/raw/libretro/Arcade/'
+               'neogeo.zip' )"
+  )
+  # list of ROMs not downloadable from URLs above, using dedicated download URLs (filename may differ here)
   local romlookup=(
-   #"( 'combh.zip'          'https://downloads.retrostic.com/roms/combatsc.zip'                                    )" #bad MD5
-   #"( 'combh.zip'          'https://archive.org/download/mame-0.236-roms-split/MAME 0.236 ROMs (split)/combh.zip' )" #bad MD5
-   #"( 'clubpacm.zip'       'https://downloads.retrostic.com/roms/clubpacm.zip'                                    )" #bad MD5
-   #"( 'clubpacm.zip'       'https://archive.org/download/mame251/clubpacm.zip'                                    )" #bad MD5
-   #"( 'journey.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/journey.zip'                       )" #bad MD5
-   #"( 'journey.zip'        'https://downloads.retrostic.com/roms/journey.zip'                                     )" #bad MD5
-   #"( 'journey.zip'        'https://mdk.cab/download/split/journey'                                               )" #bad MD5
-   #"( 'wbml.zip'           'https://archive.org/download/MAME224RomsOnlyMerged/wbml.zip'                          )" #bad MD5
-   #"( 'wbml.zip'           'https://downloads.retrostic.com/roms/wbml.zip'                                        )" #missing files
-   #"( 'wbml.zip'           'https://archive.org/download/mame.0229/wbml.zip'                                      )" #bad MD5
-   #"( 'wbml.zip'           'https://downloads.romspedia.com/roms/wbml.zip'                                        )" #missing files
-   #"( 'xevious.zip'        'https://downloads.retrostic.com/roms/xevious.zip'                                     )" #bad MD5
-   #"( 'xevious.zip'        'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/xevious.zip'       )" #bad MD5
-   #"( 'xevious.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/xevious.zip'                       )" #bad MD5
-   #"( 'xevious.zip'        'https://mdk.cab/download/split/xevious'                                               )" #missing files
-    "( 'airduel.zip'        'https://www.doperoms.org/files/roms/mame/GETFILE_airduel.zip'                         )" #ok
-    "( 'neocdz.zip'         'https://archive.org/download/mame-0.221-roms-merged/neocdz.zip'                       )" #ok
-    "( 'neogeo.zip'         'https://github.com/Abdess/retroarch_system/raw/libretro/Arcade/neogeo.zip'            )" #ok
-    "( 'roadfu.zip'         'https://archive.org/download/mame0.224/roadfu.zip'                                    )" #ok
-    "( 'irrmaze.zip'        'https://www.doperoms.org/files/roms/mame/GETFILE_irrmaze.zip'                         )" #ok
-    "( 'zaxxon_samples.zip' 'https://www.arcadeathome.com/samples/zaxxon.zip'                                      )" #ok
-    "( 'jtbeta.zip'         'https://archive.org/download/jtkeybeta/beta.zip'                                      )" #ok, from https://twitter.com/jtkeygetterscr1/status/1403441761721012224?s=20&t=xvNJtLeBsEOr5rsDHRMZyw
+   #"( 'avengers.zip'       'https://archive.org/download/MAME216RomsOnlyMerged/avengers.zip'                        )" #missing files
+   #"( 'avengers.zip'       'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/avengers.zip')" #missing files
+   #"( 'avengers.zip'       'https://archive.org/download/mame0.224/avengers.zip'                                    )" #missing files
+   #"( 'avengers.zip'       'https://dn721804.ca.archive.org/0/items/mame-0.221-roms-merged/avengers.zip'            )" #missing files
+   #"( 'avengers.zip'       'https://www.doperoms.org/files/roms/mame/GETFILE_avengers.zip                           )" #missing files
+   #"( 'avengers.zip'       'https://mdk.cab/download/split/avengers.zip'         )" #missing files
+   #"( 'btime.zip',         'https://archive.org/download/MAME216RomsOnlyMerged/btime.zip'                           )" #missing files
+   #"( 'btime.zip',         'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/btime.zip'   )" #missing files
+   #"( 'btime.zip',         '  /btime.zip'                                                           )" #open
+   #"( 'clubpacm.zip'       'https://downloads.retrostic.com/roms/clubpacm.zip'                                      )" #bad MD5
+   #"( 'clubpacm.zip'       'https://archive.org/download/mame251/clubpacm.zip'                                      )" #bad MD5
+   #"( 'clubpacm.zip'       '   /clubpacm.zip'                                                       )" #open
+   #"( 'combh.zip'          'https://downloads.retrostic.com/roms/combatsc.zip'                                      )" #bad MD5
+   #"( 'combh.zip'          'https://archive.org/download/mame_0.221_roms/mame_0.221_roms.zip/combh.zip'             )" #bad MD5
+   #"( 'combh.zip'          'https://archive.org/download/mame-0.236-roms-split/MAME 0.236 ROMs (split)/combh.zip'   )" #bad MD5
+   #"( 'combh.zip',         '  /combh.zip'                                                           )" #open
+   #"( 'journey.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/journey.zip'                         )" #bad MD5
+   #"( 'journey.zip'        'https://downloads.retrostic.com/roms/journey.zip'                                       )" #bad MD5
+   #"( 'journey.zip'        'https://mdk.cab/download/split/journey'                                                 )" #bad MD5
+   #"( 'journey.zip'        'https://downloads.consoleroms.com/roms/journey.zip'                                     )" #bad MD5
+   #"( 'wbml.zip'           'https://archive.org/download/MAME216RomsOnlyMerged/wbml.zip                             )" #bad MD5
+   #"( 'wbml.zip'           'https://archive.org/download/MAME224RomsOnlyMerged/wbml.zip'                            )" #bad MD5
+   #"( 'wbml.zip'           'https://archive.org/download/mame.0229/wbml.zip'                                        )" #bad MD5
+   #"( 'wbml.zip'           'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/wbml.zip'    )" #bad MD5
+   #"( 'wbml.zip'           'https://downloads.retrostic.com/roms/wbml.zip'                                          )" #missing files
+   #"( 'wbml.zip'           'https://downloads.romspedia.com/roms/wbml.zip'                                          )" #missing files
+   #"( 'wbml.zip'           '   /wbml.zip'                                                           )" #open
+   #"( 'xevious.zip'        'https://downloads.retrostic.com/roms/xevious.zip'                                       )" #bad MD5
+   #"( 'xevious.zip'        'https://archive.org/download/2020_01_06_fbn/roms/arcade.zip/arcade/xevious.zip'         )" #bad MD5
+   #"( 'xevious.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/xevious.zip'                         )" #bad MD5
+   #"( 'xevious.zip'        'https://mdk.cab/download/split/xevious'                                                 )" #missing files
+   #"( 'xevious.zip'        'https://archive.org/download/HBmame0.229-romsmerged/xevious.zip'                        )" #missing files
+   #"( 'xevious.zip'        'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/xevious.zip' )" #missing files
+   #"( 'xevious.zip'        'https://archive.org/download/MAME216RomsOnlyMerged/xevious.zip'                         )" #bad MD5
+   #"( 'xevious.zip'        '  /xevious.zip'                                                         )" #open
+    "( 'zaxxon_samples.zip' 'https://www.arcadeathome.com/samples/zaxxon.zip'                                        )" #ok
+    "( 'jtbeta.zip'         'https://archive.org/download/jtkeybeta/beta.zip'                                        )" #ok, from https://twitter.com/jtkeygetterscr1/status/1403441761721012224?s=20&t=xvNJtLeBsEOr5rsDHRMZyw
   )
 
   if [ ${#zips[@]} -gt 0 ]; then
     # download zips from list
-    local zip rlu
+    local zip z rlu
     for zip in "${zips[@]}"; do
-      # 1st: fetch from special urls if found in lookup table
+      # 1st: fetch from special urls if found in rom lookup table
       for rlu in "${romlookup[@]}"; do
         eval "rlu=$rlu"
         if [ "${rlu[0]}" = "$zip" ]; then
           if download_url "${rlu[1]}" "$dstroot/$zip"; then
-            rlu=''
+            continue 2
           fi
-          break
         fi
       done
-      [ -z "$rlu" ] && continue
 
-      # 2nd: fetch required rom sets from MAME URLs starting with MAME version
-      for rlu in "${mameurls[@]}"; do
+      # 2nd: fetch from url list if rom found in url lookup table
+      for rlu in "${urllookup[@]}"; do
         eval "rlu=$rlu"
-        if [ $ver -le ${rlu[0]} ]; then
-          if download_url "${rlu[1]}$zip" "$dstroot/"; then
-            rlu=''
-            break
+        for z in "${rlu[@]:1}"; do
+          if [ "$z" = "$zip" ]; then
+            if download_url "${rlu[0]}$zip" "$dstroot/$zip"; then
+              continue 3
+            fi
           fi
+        done
+      done
+
+      # 3rd: fetch from (list of) default MAME URL(s)
+      for rlu in "${mameurls[@]}"; do
+        if download_url "$rlu$zip" "$dstroot/"; then
+          continue 2
         fi
       done
     done
@@ -393,19 +425,13 @@ process_mra() {
   # drop quote characters and make rbf destination filename lowercase
   rbf="${rbf//[\'\"]/}"; rbf=${rbf,,}
   if [ -z "$rbf" ]; then rbf=${name//' '/}; fi
-  # fetch mame version
-  local mamever=$(grep -oP '(?<=<mameversion>)[^<]+' "$mrafile")
   # grep list of zip files: 1st: encapsulated in ", 2nd: encapsulated in '
   local zps=$(grep -oP '(?<=zip=")[^"]+' "$mrafile")
   if [ -z "$zps" ]; then zps=$(grep -oP "(?<=zip=')[^']+" "$mrafile"); fi
   eval "local zips=(${zps//|/ })"
 
   # shellcheck disable=SC2027
-  echo -e "\n${mrafile//"$GIT_ROOT/"} ($name, $rbf, "${zips[*]}" ($mamever)):"
-  if [ -z "$mamever" ]; then
-    echo -e "\e[1;33m  WARNING: Missing mameversion\e[0m"
-    mamever='0000'
-  fi
+  echo -e "\n${mrafile//"$GIT_ROOT/"} ($name, $rbf, "${zips[*]}"):"
 
   # create target folder and set system attribute for this subfolder to be visible in menu core
   makedir "$dstpath"
@@ -451,11 +477,11 @@ process_mra() {
   || [ "/tmp/$name.mra" -nt "$dstpath/$name.arc" ] \
   || [ ! -f "$dstpath/$name.rom" ]; then
     # download rom zip archive(s)
-    download_mame_roms "$MAME_ROMS" $mamever "${zips[@]}"
+    download_mame_roms "$MAME_ROMS" "${zips[@]}"
     # generate .rom and .arc file from .mra and .zip files
     mra "/tmp/$name.mra" "$dstpath"
-    rm "/tmp/$name.mra"
   fi
+  rm "/tmp/$name.mra"
 }
 
 
@@ -839,7 +865,7 @@ bbc_roms()             { sdcopy "$1/bbc.rom" "$2/"
                          download_url 'https://www.stardot.org.uk/files/mmb/higgy_mmbeeb-v1.2.zip' "$3/"
                          expand "$3/higgy_mmbeeb-v1.2.zip" "$3/beeb/"
                          sdcopy "$3/beeb/BEEB.MMB" "$2/BEEB.ssd"
-                         rm -rf "$2/beeb"
+                         rm -rf "$3/beeb"
                        }
 bk0011m_roms()         { sdcopy "$1/bk0011m.rom" "$2/"; }
 c16_roms()             { sdcopy "$1/c16.rom" "$2/"
@@ -978,8 +1004,12 @@ tnzs_roms()            { local kiwis=( "Arkanoid - Revenge of DOH (World).mra"
                          copy_mra_arcade_cores "$3" '' "$2"
                        }
 tsconf_roms()          { cp -pu "$1/TSConf.r"* "$SD_ROOT/"
-                         download_url "https://github.com/mist-devel/mist-binaries/raw/master/cores/tsconf/TSConf.vhd.zip" "$3/"
-                         expand "$3/TSConf.vhd.zip" "$SD_ROOT/"
+                         if [ -f "$1/TSConf.vhd.zip" ]; then
+                           expand "$1/TSConf.vhd.zip" "$SD_ROOT/"
+						 else
+                           download_url "https://github.com/mist-devel/mist-binaries/raw/master/cores/tsconf/TSConf.vhd.zip" "$3/"
+                           expand "$3/TSConf.vhd.zip" "$SD_ROOT/"
+						 fi
                        }
 turbogfx_roms()        { download_url 'https://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/TurboGrafx16.zip' "$3/"
                          expand "$3/TurboGrafx16.zip" "$3/"
@@ -1169,13 +1199,11 @@ copy_mist_cores() {
         if [ ! -z "$hdl" ]; then
           $hdl "$dir" "$dstroot/$dst" "$MISC_FILES/$(basename "$dst")"
         fi
-        dir=''
-        break
+        continue 2
       fi
     done
-    if [ ! -z "$dir" ]; then
-      echo -e "\e[1;31m\nUnhandled: '$dir'\e[0m"
-    fi
+
+    echo -e "\e[1;31m\nUnhandled: '$dir'\e[0m"
   done
   IFS=$saveIFS
 }
@@ -1238,8 +1266,7 @@ copy_sidi_cores() {
             if [ ! -z "$hdl" ]; then
               $hdl "$dir" "$dstroot/$dst" "$MISC_FILES/$(basename "$dst")"
             fi
-            dir=''
-            break
+            continue 2
           fi
         done
       fi
@@ -1265,17 +1292,14 @@ copy_sidi_cores() {
               fi
               # set system attribute for this subfolder to be visible in menu core
               set_system_attr "$dstroot/$dst"
-              dir=''
-              break
+              continue 3
             fi
           done
         done
       fi
 
-      if [ ! -z $dir ]; then
-        if ([ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rbf' 2>/dev/null)" ] || [ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rar' 2>/dev/null)" ]); then
-          echo -e "\e[1;31m\nUnhandled: \"$dir\"\e[0m"
-        fi
+      if ([ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rbf' 2>/dev/null)" ] || [ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rar' 2>/dev/null)" ]); then
+        echo -e "\e[1;31m\nUnhandled: \"$dir\"\e[0m"
       fi
     fi
   done

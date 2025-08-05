@@ -5,8 +5,8 @@ It tries to create a complete as possible collection of cores and their required
 There are seperate scripts for [Linux](Linux) and [Windows](Windows) hosts. \
 With PowerShell [installed](https://learn.microsoft.com/de-de/powershell/scripting/install/installing-powershell-on-linux) on a Linux system the [genSD.ps1](Windows/genSD.ps1) script is executable on a Linux system too.
 
-This script only collects the work of many other contributors (FPGA, Hardware, Software, ...) to generate a 'distribution' for the systems mentioned above. \
-Thanks to all these contributors for their work (see [links to repositories](#Links) for only some of them).
+This script collects the work of many other contributors (FPGA, Hardware, Software, ...) to generate a 'distribution' for the systems mentioned above. \
+Thanks to all these contributors for their work (see [links to repositories](#Links)).
 
 After executing this script appr.
 
@@ -30,10 +30,11 @@ Get the scripts by
 
 The SD card must be
 - at least 32GB
-- formatted (FAT, FAT32 or exFAT (preferred))
+- formatted with **FAT**, **FAT32** or **exFAT** (preferred!)
 
-or use a folder on HDD with the same available disk space
+or use a folder on HDD with the same available disk space.
 
+Note: As the .mra parsing and download of the MAME ROMs has changed significantly, please delete your `repos/mame` [cache folder](#cache-folders) before executing this script to make use of the enhanced MRA ROM download.
 
 ## Usage
 simply call the script with minor parameters:
@@ -54,7 +55,7 @@ option|description|example
   ```
 - Initialize SD card for MiST, SD card mounted to /media/SD-Card (Linux):
   ```
-  genSD.sh -s mist -d /media/SD-Card
+  <path-to-script/>genSD.sh -s mist -d /media/SD-Card
   ```
 - Initialize SD card for SiDi, SD card in drive E: (Windows)
   ```
@@ -70,7 +71,7 @@ option|description|example
   ```
 - Initialize SD card for MiST, create in subfolder (Linux)
   ```
-  genSD.sh -s mist
+  <path-to-script>/genSD.sh -s mist
   ```
 
 ## What is created
@@ -138,7 +139,7 @@ During installation, several temporary folders are created in the current folder
 │       ├── Atari 2600
 │       ├── Next186
 │       └── ...
-└── tools                # required tools for executung this script
+└── tools                # required tools for executing this script
 ```
 It is a good idea to keep these folders as the next run will be much faster (git only needs to update and not clone, the download of the MAME ROMs and the other miscellaneous files can be skipped, ...). \
 This saves more than 10GB of data not being fetched again.
@@ -153,7 +154,7 @@ The project contains a [workspace file](https://code.visualstudio.com/docs/edito
 Best practice here is to simply open the project by double-click on the [genSD.code-workspace](genSD.code-workspace) file. \
 VisualStudio Code will open the project and install/configure the required plugins.
 
-For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1371-L1391) left disabled in the scripts.
+For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1395-L1415) left disabled in the scripts.
 
 A [configuration](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) file for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test.bat](test/test.bat#L15) script
 
@@ -178,16 +179,21 @@ Additionally, a full log for each set is created in the 'SD#' folder with some s
 - MAME ROMs with missing parts
 - some statistics about the number of .rbf, .arc and .rom files
 
+If executing the `test.sh` script with Linux on an **exFAT** formatted destination drive, please execute this script with sudo privileges (`sudo ./test.sh`). \
+See [Known Issues](#known-issues) for details (the test execution would break and ask for the sudo password during test run otherwise).
+
 Additionally it is always a good idea to compare the Linux and Windows generated sets and logs. \
-Please keep in mind that each test execution will consume about 50GB of HDD space (the Linux version more as it will test the PowerShell script too) - not talking about the test run time (several hours)
+Please keep in mind that each test execution will consume about 50GB of HDD space (the Linux version even twice as it will test the PowerShell script too) - not talking about the test run time (several hours)
 
 ## Known issues
 - **exFAT and DOS attributes (Linux version only)** \
-  MiST and SiDi read **FAT**, **FAT32** or **exFAT** (since [firmware_210525](https://github.com/mist-devel/mist-firmware/commit/56a1a0888f2448e6d1b5cf705d106a648709aff7)) fomatted SD cards. \
-  The menu core [uses](https://github.com/mist-devel/mist-board/wiki/SDCardSetup#sd-card-with-multiple-fpga-cores) the system attribute (to show subfolders) and hidden attribute (to hide cores from menu). \
-  Linux can write these attributes with `fatattr` tool on **FAT** or **FAT32** drives and SD cards, but for **exFAT** formatted SD cards root privileges are required.
+  MiST, SiDi and SiDi128 can read **FAT**, **FAT32** or **exFAT** (since [firmware_210525](https://github.com/mist-devel/mist-firmware/commit/56a1a0888f2448e6d1b5cf705d106a648709aff7)) fomatted SD cards. \
+  The menu core [uses](https://github.com/mist-devel/mist-board/wiki/SDCardSetup#sd-card-with-multiple-fpga-cores) the
+  - **S**ystem attribute (to show subfolders) and
+  - **H**idden attribute (to hide cores from menu).
 
-  This means to support the DOS attributes correctly on **exFAT** formated target devices the script
+  Linux can write these attributes with `fatattr` tool on **FAT** or **FAT32** drives and SD cards, but for **exFAT** formatted SD cards `root` privileges are required. \
+  To support the DOS attributes correctly on **exFAT** formated target devices the script
   - will ask for the sudo password or
   - needs to be called with `sudo`, e.g.
     ```
@@ -195,20 +201,44 @@ Please keep in mind that each test execution will consume about 50GB of HDD spac
     ```
 
   The windows Powershell script executed on a Windows system doesn't have this issue.
+
+- **exFAT SD card, but MiST/SiDi firmware version too old** \
+  If the firmware version of your system is older than 210525 (without support for **exFAT** drives) means you can't read an exFAT formated SD card. \
+  This can be solved by
+  1. format an SD card with **FAT** or **FAT32** filesystem
+  2. copy `core.rbf` and `firmware.upg` (>= 210525) to the root of this SD card
+  3. boot your system with this card
+  4. update the firmware from the (menu) core
+
+  Now your system is ready for **exFAT** formatted SD cards.
 - **executing the script directly from SD card** \
   Executing the script directly from an SD card (script located on the SD card) only works if the SD card is formated using **exFAT** file system. \
   With an FAT/FAT32 formated drive the script will fail (the size of the [jtbin](https://github.com/jotego/jtbin) repository (appr. 7GB) exceeds the max. file size for an FAT/FAT32 formatted card (4GB)). \
-  And (if executed on a Linux host) the e**x**ecutable flag of the script and the downloaded [mra tool](https://github.com/mist-devel/mra-tools-c/tree/master/release) would be missing ("Permission denied" error).
+  And (if executed on a Linux host) the e**x**ecutable flag of the script and the downloaded [mra tool](https://github.com/mist-devel/mra-tools-c/tree/master/release) would be missing (`Permission denied" ` error).
 - **.mra parsing of ROM files** \
-  The ROM file names parsed from the `.mra` files refer a MAME version. \
-  Unfortunetly many ROMS, if fetched from their referred MAME version, don't match. I tried to find a best matching [set of download URLs](Linux/genSD.sh#L222-L260) incl. some [extra handling](Linux/genSD.sh#L264-L285), but for some ROM archives `mra` still complains about checksum mismatch or missing parts: \
-  **ROMs not found**: \
-  `avengersa.zip`, `bioniccbl2.zip`, `kchamp2p.zip`, `makaimurb.zip`, `outruneha.zip`, `pmonster.zip`, `pzloop2jd.zip`, `sbagman2.zip`, `sf2en.zip`, `sf2j17.zip`, `sf2qp2.zip`, `shinobi6.zip`, `timescan3.zip`
-  **ROMs found, but with MD5 mismatch or missing parts**: \
-  btime.zip journey.zip xevious.zip clubpacm.zip combh.zip choplift.zip tokisens.zip ufosensi.zip wbml.zip
-  `journey.rom`, `sxevious.rom`, `xevious.rom`, `clubpacm.rom`, `combh.rom`, `wbml.rom`, `lottofun.rom`, `spdball.rom`, `topgunbl.rom` \
-  I would appreciate any ideas to improve this.
-- **ROMs #2** \
+  The ROM file names parsed from the `.mra` files refer a MAME version. But unfortunetly many ROMS, if fetched from their referred MAME version, don't match. \
+  I tried to find a best matching [set of download URLs](Linux/genSD.sh#L222-L247) incl. some [extra handling](Linux/genSD.sh#L252-L271) and [special downloads](Linux/genSD.sh#L310-L311), but for some ROM archives `mra` still complains: \
+  - **ROMs not found**:
+    - `kchamp2p.zip`
+    - `timescan3.zip`
+  - **ROMs found, but with MD5 mismatch or missing parts**:
+    - `btime.zip`
+    - `journey.zip`
+    - `xevious.zip`
+    - `clubpacm.rom`
+    - `combh.zip`
+    - `wbml.zip`
+    - `lottofun.rom`
+    - `spdball.zip`
+
+  I would appreciate any ideas to improve/fix this.
+- **Missing Jotego Cores** \
+  Some .mra files in the Jotego repository refer missing .rbf files in the [mist](https://github.com/jotego/jtbin/tree/master/mist), [sidi](https://github.com/jotego/jtbin/tree/master/sidi) or [sidi128](https://github.com/jotego/jtbin/tree/master/sidi128) folders. The reason for the missing cores are
+  - insufficient target board FPGA ressources and
+  - different development status
+
+## Ideas for improvements
+- **more ROMs** \
   As this is an early version, there are lots of ROMs and Games to add/fix - please give me a hint or pull request. \
   I think here we have a structured base to improve in the future.
 - **files and folders required in root folder** \
@@ -219,17 +249,14 @@ Please keep in mind that each test execution will consume about 50GB of HDD spac
   Currently the script simply uses the default [mist.ini](https://github.com/mist-devel/mist-binaries/blob/master/cores/mist.ini) from the main repository. \
   Generating a configuration with [optimal settings](https://github.com/mist-devel/mist-board/wiki/Configuration-files-(.ini)) for each core would be a nice additional feature for this scripts. \
   Jotego provides an extended [mist.ini](https://github.com/jotego/jtbin/blob/master/arc/mist.ini) file for his cores.
-- **Missing Jotego Cores** \
-  Some .mra files in the Jotego repository refer missing .rbf files in the [mist](https://github.com/jotego/jtbin/tree/master/mist), [sidi](https://github.com/jotego/jtbin/tree/master/sidi) or [sidi128](https://github.com/jotego/jtbin/tree/master/sidi128) folders. The reason for the missing cores are
-  - sufficient target board FPGA ressources and
-  - current development status
 - **MiSTer support** \
   Need to check the typical **MiSTer** setup and align with this script. \
-  Target systems of this script are **MiST**, **SiDi** and **SiDi128** (much cheaper than MiSTer).
+  Target systems of this script are **MiST**, **SiDi** and **SiDi128** (cheaper than MiSTer).
 
-It would be nice if all cores would be built for both **MiST** and **SiDi** (as the hardware features are nearly identical). **SiDi128** has even more resources so is be able to run all cores a **MiST** or **SiDi** does (and even more).
+It would be nice if all cores would be built for both **MiST**, **SiDi** and **SiDi128** (as the hardware features are nearly identical). \
+**SiDi128** has even more resources so is be able to run all cores a **MiST** or **SiDi** does (and even more).
 
-Thanks to Jotego for his [jtbin](https://github.com/jotego/jtbin) Arcade repository providing releases for multiple FPGA platforms (depending on FPGA ressources).
+Thanks here to Jotego for his [jtbin](https://github.com/jotego/jtbin) Arcade repository providing releases for multiple FPGA platforms (depending on FPGA ressources).
 
 ## Links
 
@@ -241,18 +268,31 @@ Thanks to Jotego for his [jtbin](https://github.com/jotego/jtbin) Arcade reposit
 - [Nino Porcino (nippur72) cores](https://github.com/nippur72)
 - [Petr (PetrM1) Ondra SPO 186 core](https://github.com/PetrM1/OndraSPO186_MiST)
 - [Jozsef Laszlo cores](https://joco.homeserver.hu/fpga)
-- [Till Harbaum's repositories](https://github.com/harbaum)
-- [Rok Krajnc's repositories](https://github.com/rkrajnc)
+- [Till Harbaum repositories](https://github.com/harbaum)
+- [Rok Krajnc repositories](https://github.com/rkrajnc)
 - [Sebastien Delestaing repositories](https://github.com/sebdel)
 
-### SiDi repositories
+### SiDi/SiDi128 repositories
 - [Manuel Fernández Higueras (ManuFerHi) SiDi/SiDi128 cores](https://github.com/ManuFerHi/SiDi-FPGA)
 - [Bruno Silvia (eubrunosilva) SiDi cores](https://github.com/eubrunosilva/SiDi)
 
 ### General repositories
 - [Jose Tejada (jotego) Arcade cores](https://github.com/jotego/jtbin)
-- [Gyurco's repositories](https://github.com/gyurco)
-- [Somhi's repositories](https://github.com/somhi)
-- [Alastair M. Robinson's repositories](https://github.com/robinsonb5)
-- [Sebastien Delestaing's repositories](https://github.com/sebdel)
+- [György Szombathelyi (gyurco) repositories](https://github.com/gyurco)
+- [Somhi repositories](https://github.com/somhi)
+- [Alastair M. Robinson repositories](https://github.com/robinsonb5)
 - [mra tool](https://github.com/mist-devel/mra-tools-c)
+- [Internet Archive](https://archive.org)
+- [Myrient Video Game Preservation](https://myrient.erista.me)
+
+
+### Alternatives to this repository
+for **MiST**, **SiDi**, **SiDi128**
+- outdated [MiST starter pack](https://github.com/mist-devel/mist-binaries/tree/master/starter_pack)
+- [MiST getting started](https://github.com/mist-devel/mist-board/wiki/GettingStarted) guide
+- [SiDi128SD](https://github.com/eltiobarbas/SiDi128SD) tool
+
+for **MiSTer**
+- [MiSTer SD-Installer 64bit](https://github.com/MiSTer-devel/SD-Installer-Win64_MiSTer) / [SD-InstallTool_Win_MiSTer 32bit](https://github.com/MiSTer-devel/SD-InstallTool_Win_MiSTer)
+- [MiSTer setup guide](https://github.com/MiSTer-devel/Wiki_MiSTer/wiki/Setup-Guide)
+- another [MiSTer setting up](https://boogermann.github.io/Bible_MiSTer/getting-started/how-to-setup/) guide

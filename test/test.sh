@@ -61,7 +61,7 @@ for scr in Linux/genSD.sh Windows/genSD.ps1; do
       ansifilter='s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g'
 
       # generate content to destination SD folder
-      echo 'y' | (time "$(dirname "${BASH_SOURCE[0]}")/Linux/$(basename $scr)" -s $sys -d "$dstSD" 2>&1) | sed -ru $ansifilter | tee "$dstSD/log.txt"
+      (time echo 'y' | "$(dirname "${BASH_SOURCE[0]}")/Linux/$(basename $scr)" -s $sys -d "$dstSD") 2>&1  | sed -ru $ansifilter | tee "$dstSD/log.txt"
 
       # log error/warning results
       echo -e -n "\n\n\e[1mMissing core .rbf files:\n\e[1;31m"                                 | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
