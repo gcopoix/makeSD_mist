@@ -12,9 +12,9 @@ After executing this script appr.
 
 | |MiST|SiDi|SiDi128|
 |---|---:|---:|---:|
-|.rbf|~260|~150|~190|
-|.arc|~1340|~940|~1140|
-|.rom|~1380|~970|~1170|
+|.rbf|~260|~220|~200|
+|.arc|~1340|~1220|~1250|
+|.rom|~1380|~1260|~1290|
 |.ram|~390|~330|~350 |
 
 files are collected/generated.
@@ -154,7 +154,7 @@ The project contains a [workspace file](https://code.visualstudio.com/docs/edito
 Best practice here is to simply open the project by double-click on the [genSD.code-workspace](genSD.code-workspace) file. \
 VisualStudio Code will open the project and install/configure the required plugins.
 
-For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1395-L1415) left disabled in the scripts.
+For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1470-L1490) left disabled in the scripts.
 
 A [configuration](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) file for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test.bat](test/test.bat#L15) script
 
@@ -217,7 +217,7 @@ Please keep in mind that each test execution will consume about 50GB of HDD spac
   And (if executed on a Linux host) the e**x**ecutable flag of the script and the downloaded [mra tool](https://github.com/mist-devel/mra-tools-c/tree/master/release) would be missing (`Permission denied" ` error).
 - **.mra parsing of ROM files** \
   The ROM file names parsed from the `.mra` files refer a MAME version. But unfortunetly many ROMS, if fetched from their referred MAME version, don't match. \
-  I tried to find a best matching [set of download URLs](Linux/genSD.sh#L222-L247) incl. some [extra handling](Linux/genSD.sh#L252-L271) and [special downloads](Linux/genSD.sh#L310-L311), but for some ROM archives `mra` still complains: \
+  I tried to find a best matching [set of download URLs](Linux/genSD.sh#L211-L238) incl. some [extra handling](Linux/genSD.sh#L240-L264) and [special downloads](Linux/genSD.sh#L302-L303), but for some ROM archives `mra` still complains: \
   - **ROMs not found**:
     - `kchamp2p.zip`
     - `timescan3.zip`
@@ -263,6 +263,7 @@ Thanks here to Jotego for his [jtbin](https://github.com/jotego/jtbin) Arcade re
 ### MiST repositories
 - [MiST cores](https://github.com/mist-devel/mist-binaries)
 - [MiST ARM Firmware](https://github.com/mist-devel/mist-firmware)
+- [tdelage26 MiST cores](https://github.com/tdelage26/mist-binaries)
 - [Marcel Gehstock arcade cores](https://github.com/Gehstock/Mist_FPGA_Cores)
 - [Alexey Melnikov (sorgelig) cores](https://github.com/sorgelig)
 - [Nino Porcino (nippur72) cores](https://github.com/nippur72)
@@ -274,6 +275,7 @@ Thanks here to Jotego for his [jtbin](https://github.com/jotego/jtbin) Arcade re
 
 ### SiDi/SiDi128 repositories
 - [Manuel Fernández Higueras (ManuFerHi) SiDi/SiDi128 cores](https://github.com/ManuFerHi/SiDi-FPGA)
+- [tdelage26 SiDi/SiDi128 cores](https://github.com/tdelage26/SiDi-FPGA)
 - [Bruno Silvia (eubrunosilva) SiDi cores](https://github.com/eubrunosilva/SiDi)
 
 ### General repositories
