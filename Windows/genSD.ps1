@@ -24,7 +24,7 @@
 filter replace-slash { $_ -replace '\\', '/' }
 
 # cache folders for repositories, MAME ROMs and miscellaneous support files
-$PSScriptRoot =  $PSScriptRoot | replace-slash
+$PSScriptRoot =  ($PSScriptRoot | replace-slash).TrimEnd('/')
 $GIT_ROOT     = "$PSScriptRoot/repos"
 $TOOLS_ROOT   = "$PSScriptRoot/tools"
 $MAME_ROMS    = "$PSScriptRoot/repos/mame"
@@ -106,7 +106,7 @@ function clone_or_update_git {
   param ( [string]$url,       # $1: git url
            $dstpath = $null ) # $2: destination directory (optional)
 
-  $name = Split-Path $url -LeafBase
+    $name = $url.Replace('/','.').Split('.')[-2]
   if ($null -eq $dstpath) { $dstpath = "$GIT_ROOT/$name" }
 
   # check if cloned before
@@ -129,10 +129,12 @@ function clone_or_update_git {
   # see https://stackoverflow.com/questions/21735435/git-clone-changes-file-modification-time for details
   foreach ($f in (&$script:git -C "$dstpath/" ls-tree -r --name-only HEAD)) {
     Write-Host -noNewLine "`rsychronizing timestamps: $([char]27)[0K$f"
-#    if (Test-Path -LiteralPath "$dstpath/$f" -PathType Leaf) {
+    if (Test-Path -LiteralPath "$dstpath/$f") {
       $itm = Get-Item -LiteralPath "$dstpath/$f" -Force
       $itm.CreationTime = $itm.LastWriteTime = $(&$script:git -C "$dstpath/" log -1 --format="%ai" -- $f 2>$null)
-#    }
+    } else {
+      Write-Host -ForegroundColor red " failed."
+    }
   }
   Write-Host ""
 }
@@ -636,9 +638,9 @@ function copy_gehstock_mist_cores {
           break
         }
       }
-      if (Get-ChildItem -Path "$(Split-Path -Parent $rbf)/*.mra" -Recurse | Select-String -Pattern "<rbf>$(Split-Path $name -LeafBase)</rbf>") {
+      if (Get-ChildItem -Path "$(Split-Path -Parent $rbf)/*.mra" -Recurse | Select-String -Pattern "<rbf>$($name.Replace('/','.').Split('.')[-2])</rbf>") {
         sdcopy $rbf "$dst/$name"
-        foreach ($f in (Get-ChildItem -Path "$(Split-Path -Parent $rbf)/*.mra" -Recurse | Select-String -Pattern "<rbf>$(Split-Path $name -LeafBase)</rbf>" | Select-Object -ExpandProperty Path | Sort-Object)) {
+        foreach ($f in (Get-ChildItem -Path "$(Split-Path -Parent $rbf)/*.mra" -Recurse | Select-String -Pattern "<rbf>$($name.Replace('/','.').Split('.')[-2])</rbf>" | Select-Object -ExpandProperty Path | Sort-Object)) {
           process_mra "$f" "$dst" ''
         }
       #} elseif ??? {
@@ -705,7 +707,7 @@ function copy_sorgelig_mist_cores {
   )
   $srcroot="$GIT_ROOT/MiST/sorgelig"
   foreach($item in $cores) {
-    $name = (Split-Path $item[1] -LeafBase) -ireplace '_MiST', ''
+    $name = $item[1].Replace('/','.').Split('.')[-2] -ireplace '_MiST', ''
     Write-Host ""
     clone_or_update_git $item[1] "$srcroot/$name"
     copy_latest_file "$srcroot/$name/$($item[2])" "$dstroot/$($item[0])/$(Split-Path $item[0] -Leaf).rbf" '*.rbf'
@@ -1082,7 +1084,7 @@ function sidi_arcade        { param ($1,$2,$3)
                                 if (Test-Path "$dir/*.rbf") {
                                   Write-Host "  '$($dir.Replace("$GIT_ROOT/",''))' -> '$2'"
                                   foreach ($f in (Get-ChildItem "$dir/*.rbf" -Exclude '*sidi128*.*' | Sort-Object -Property FullName | replace-slash)) {
-                                    sdcopy $f "$2/$name/$((Split-Path $f -LeafBase).Split('_')[0]).rbf"
+                                    sdcopy $f "$2/$name/$(($f.Replace('/','.').Split('.')[-2]).Split('_')[0]).rbf"
                                   }
                                   if(Test-Path "$dir/mra") {
                                     # .mra file(s) part of src repository
@@ -1126,7 +1128,7 @@ function sidi_arcade        { param ($1,$2,$3)
                                   Write-Host "  '$($dir.Replace("$GIT_ROOT/",''))' -> '$2/$name'"
                                   foreach ($f in (Get-ChildItem "$dir/*.rar" | Sort-Object -Property FullName | replace-slash)) {
                                     switch ($name) {
-                                      'Gehstock'        { $dst = "$2/$name/$(Split-Path $f -LeafBase)" }
+                                      'Gehstock'        { $dst = "$2/$name/$($f.Replace('/','.').Split('.')[-2])" }
                                       'Konami hardware' { $dst = "$2/$name" }
                                       default           { $dst = "$2" }
                                     }
@@ -1536,6 +1538,9 @@ check_dependencies
 # download_url 'https://github.com/mist-devel/mist-binaries/raw/refs/heads/master/cores/arcade/Konami Timepilot Hardware/Time Pilot.mra' '/tmp/'
 # download_url 'https://github.com/mist-devel/mist-binaries/raw/refs/heads/master/cores/arcade/Konami Timepilot Hardware/TimePlt.rbf' '/tmp/'
 # process_mra '/tmp/Time Pilot.mra' . '/tmp'
+# download_url 'https://github.com/mist-devel/mist-binaries/raw/refs/heads/master/cores/arcade/Sega Zaxxon Hardware/Zaxxon.rbf' '/tmp/'
+# download_url 'https://github.com/mist-devel/mist-binaries/raw/refs/heads/master/cores/arcade/Sega Zaxxon Hardware/Future Spy.mra' '/tmp/'
+# process_mra '/tmp/Future Spy.mra' . '/tmp'
 # copy_sidi_cores $SD_ROOT '.'
 # copy_sidi_cores $SD_ROOT 'Arcade/Jotego/TAITO TNZS'
 # copy_mist_cores $SD_ROOT 'Arcade/MiST'
