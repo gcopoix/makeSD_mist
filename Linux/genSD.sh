@@ -36,7 +36,7 @@ check_dependencies() {
   if ! which fatattr 1>/dev/null; then sudo apt install -y fatattr; fi
   if ! which git     1>/dev/null; then sudo apt install -y git;     fi
   if [ ! -x "$TOOLS_ROOT/mra" ]; then
-    download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/"
+    download_url 'https://github.com/mist-devel/mra-tools-c/raw/f34d47fc93e4835703d659af0774a4df1576ee2b/release/linux/mra' "$TOOLS_ROOT/"
     chmod +x "$TOOLS_ROOT/mra"
   fi
 }
@@ -1082,10 +1082,13 @@ sidi_arcade()          { if [ $SYSTEM != 'sidi' ]; then return; fi
                            fi
                          done
                        }
-sidi128_arcade()       {  if [ $SYSTEM = 'sidi128' ]; then
-                            cp -pu "$1/"*.* "$2/"
-                          fi
-						}
+sidi128_arcade()       { # use Cores/Arcade/MRA/*.mra files for SiDI128 Arcade generation
+                         for f in $(find "$1/../../MRA/" -type f -name '*.mra' -maxdepth 1 | sort -f); do
+                           name=$(basename -s .mra "$f")
+                           process_mra "$f" "$2/$name" "$1"
+                         done
+                         rm -f "$2/$(basename "$2").rbf"
+                       }
 sms_roms()             { download_url "https://archive.org/download/cylums-sega-master-system-rom-collection/Cylum's Sega Master System ROM Collection (02-16-2021).zip/Phantasy Star.zip" "$3/"
                          expand "$3/Phantasy Star.zip" "$2/roms"
                        }

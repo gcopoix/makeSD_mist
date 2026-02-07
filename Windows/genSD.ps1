@@ -44,7 +44,7 @@ function check_dependencies {
     if (-not (&which fatattr)) { &sudo apt install -y fatattr };
 
     if(-not ( Test-Path "$TOOLS_ROOT/mra")) {
-      download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/" | Out-Null
+      download_url 'https://github.com/mist-devel/mra-tools-c/raw/f34d47fc93e4835703d659af0774a4df1576ee2b/release/linux/mra' "$TOOLS_ROOT/" | Out-Null
       &chmod +x -f "$TOOLS_ROOT/mra" *>$null
     }
     $script:unzip    = 'unzip'
@@ -1139,9 +1139,12 @@ function sidi_arcade        { param ($1,$2,$3)
                               }
                             }
 function sidi128_arcade     { param ($1,$2,$3)
-                              if ($SYSTEM -eq "sidi128") {
-                                sdcopy "$1/*.*" "$2/"
+                              # use Cores/Arcade/MRA/*.mra files for SiDI128 Arcade generation
+                              foreach ($f in (Get-ChildItem "$1/../../MRA" | Sort-Object -Property FullName)) {
+                                $name = (Get-Item -LiteralPath $f).Basename
+                                process_mra "$f" "$2/$name" "$1"
                               }
+                              Remove-Item "$2/$((Get-Item -Path $f).Name).rbf" | Out-Null
                             }
 function sms_roms           { param ($1,$2,$3)
                               download_url "https://archive.org/download/cylums-sega-master-system-rom-collection/Cylum's Sega Master System ROM Collection (02-16-2021).zip/Phantasy Star.zip" "$3/" | Out-Null
