@@ -36,8 +36,11 @@ check_dependencies() {
   if ! which fatattr 1>/dev/null; then sudo apt install -y fatattr; fi
   if ! which git     1>/dev/null; then sudo apt install -y git;     fi
   if [ ! -x "$TOOLS_ROOT/mra" ]; then
-    download_url 'https://github.com/mist-devel/mra-tools-c/raw/f34d47fc93e4835703d659af0774a4df1576ee2b/release/linux/mra' "$TOOLS_ROOT/"
-    chmod +x "$TOOLS_ROOT/mra"
+    # build mra tool to make sure it links to glibc found on system
+    clone_or_update_git https://github.com/mist-devel/mra-tools-c "$GIT_ROOT/mra-tools-c"
+    make -C "$GIT_ROOT/mra-tools-c"
+    sdcopy "$GIT_ROOT/mra-tools-c/mra" "$TOOLS_ROOT/"
+    make -C "$GIT_ROOT/mra-tools-c" clean
   fi
 }
 
