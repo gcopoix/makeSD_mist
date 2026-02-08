@@ -31,12 +31,12 @@ check_dependencies() {
   # get necessary helper tools (unzip, unrar, grep, git)
   if ! which unzip   1>/dev/null; then sudo apt install -y unzip;   fi
   if ! which unrar   1>/dev/null; then sudo apt install -y unrar;   fi
-  if ! which 7z      1>/dev/null; then sudo apt install -y 7z;      fi
+  if ! which 7z      1>/dev/null; then sudo apt install -y 7zip;    fi
   if ! which grep    1>/dev/null; then sudo apt install -y grep;    fi
   if ! which fatattr 1>/dev/null; then sudo apt install -y fatattr; fi
   if ! which git     1>/dev/null; then sudo apt install -y git;     fi
   if [ ! -x "$TOOLS_ROOT/mra" ]; then
-    download_url 'https://github.com/mist-devel/mra-tools-c/raw/f34d47fc93e4835703d659af0774a4df1576ee2b/release/linux/mra' "$TOOLS_ROOT/"
+    download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/"
     chmod +x "$TOOLS_ROOT/mra"
   fi
 }

@@ -39,12 +39,12 @@ function check_dependencies {
   if ($isLinux) {
     if (-not (&which unzip  )) { &sudo apt install -y unzip   };
     if (-not (&which unrar  )) { &sudo apt install -y unrar   };
-    if (-not (&which 7z     )) { &sudo apt install -y 7z      };
+    if (-not (&which 7z     )) { &sudo apt install -y 7zip    };
     if (-not (&which git    )) { &sudo apt install -y git     };
     if (-not (&which fatattr)) { &sudo apt install -y fatattr };
 
     if(-not ( Test-Path "$TOOLS_ROOT/mra")) {
-      download_url 'https://github.com/mist-devel/mra-tools-c/raw/f34d47fc93e4835703d659af0774a4df1576ee2b/release/linux/mra' "$TOOLS_ROOT/" | Out-Null
+      download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/" | Out-Null
       &chmod +x -f "$TOOLS_ROOT/mra" *>$null
     }
     $script:unzip    = 'unzip'
