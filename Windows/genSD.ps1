@@ -37,24 +37,37 @@ function check_dependencies {
   # this script can be executed with Powershell for Linux (pwsh) too.
   # Handle external tool names with OS dependent script-scoped variables.
   if ($isLinux) {
-    if (-not (&which unzip  )) { &sudo apt install -y unzip   };
-    if (-not (&which unrar  )) { &sudo apt install -y unrar   };
-    if (-not (&which 7z     )) { &sudo apt install -y 7zip    };
-    if (-not (&which git    )) { &sudo apt install -y git     };
-    if (-not (&which fatattr)) { &sudo apt install -y fatattr };
+    $script:missing = ''
+    if (&which unzip  ) { $script:unzip    = 'unzip'   } else { $missing = "$missing unzip"   }
+    if (&which unrar  ) { $script:unrar    = 'unrar'   } else { $missing = "$missing unrar"   }
+    if (&which 7z     ) { $script:sevenzip = '7z'      } else { $missing = "$missing 7zip"    }
+    if (&which git    ) { $script:git      = 'git'     } else { $missing = "$missing git"     }
+    if (&which fatattr) { $script:attrib   = 'fatattr' } else { $missing = "$missing fatattr" }
+    $script:touch = 'touch'
+    $env:TEMP     = '/tmp'
 
     if(-not ( Test-Path "$TOOLS_ROOT/mra")) {
-      download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/" | Out-Null
-      &chmod +x -f "$TOOLS_ROOT/mra" *>$null
+      if ($false) {
+        # build mra tool to make sure it links to glibc found on system
+        if (-not (&which make)) {
+          $missing = "$missing build-essential"
+        } else {
+          clone_or_update_git 'https://github.com/mist-devel/mra-tools-c' "$GIT_ROOT/mra-tools-c"
+          &make -C "$GIT_ROOT/mra-tools-c"
+          sdcopy "$GIT_ROOT/mra-tools-c/mra" "$TOOLS_ROOT/"
+          &make -C "$GIT_ROOT/mra-tools-c" clean
+        }
+      } else {
+        download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/" | Out-Null
+        &chmod +x -f "$TOOLS_ROOT/mra" *>$null
+      }
+      $script:mra = "$TOOLS_ROOT/mra"
     }
-    $script:unzip    = 'unzip'
-    $script:unrar    = 'unrar'
-    $script:sevenzip = '7z'
-    $script:touch    = 'touch'
-    $script:git      = 'git'
-    $script:attrib   = 'fatattr'
-    $script:mra      = "$TOOLS_ROOT/mra"
-    $env:TEMP        = '/tmp'
+    if ($missing) {
+      Write-Host -ForegroundColor red " ERROR: Some required packages ($missing ) missing." `
+                                   "`r`nPlease install by 'sudo apt install$missing' and restart this script."
+      exit 1
+    }
   } else {
     #if (-not (Test-Path "$TOOLS_ROOT/wget.exe")) {
     #  download_url 'http://eternallybored.org/misc/wget/1.21.4/32/wget.exe' "$TOOLS_ROOT/" | Out-Null
@@ -321,42 +334,58 @@ function download_mame_roms {
    #'https://archive.org/download/mame0.224/'
    #'https://archive.org/download/MAME_0.224_ROMs_merged/'
    #'https://archive.org/download/HBmame0.229-romsmerged/'
-    'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/'
-   #'https://myrient.erista.me/files/Internet Archive/chadmaster/fbnarcade-fullnonmerged/arcade/'
+   #'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/'
    #'https://archive.org/download/mame251/'
-   #'https://myrient.erista.me/files/Internet Archive/rompacker/mame-chds-roms-extras-complete/MAME 0.256 ROMs (merged)/'
-    'https://myrient.erista.me/files/Internet Archive/rompacker/mame-chds-roms-extras-complete/MAME - Update ROMs (v0.257 to v0.258)/'
+   #'https://archive.org/download/mame_20240311/MAME.zip/MAME/'
+   'https://archive.org/download/mame-0.260-roms-non-merged/MAME 0.260 ROMs (non-merged)/MAME 0.260 ROMs (non-merged)/'
+   #'https://archive.org/download/mame-0.272-romset-complete-merged/arcade/'
+   #'https://archive.org/download/mame-0.272-romset-complete-merged/bios/'
+   #'https://archive.org/download/mame-0.272-romset-complete-merged/devices/'
+   #'https://archive.org/download/mame-0.272-romset-complete-merged/mess/'
+   'https://archive.org/download/MAME_0.278_ROMs_non-merged_2025/MAME_0.278_ROMs_non-merged/'
    #'https://downloads.consoleroms.com/roms/'
    #'https://www.doperoms.org/files/roms/mame/GETFILE_' # without '/', archive.zip leads to 'GETFILE_archive.zip')
+   'https://archive.org/download/insert_coin_mame/'
   )
   # list of ROMs which need to be downloaded from other URL than the MAME URLs enabled above
   $urllookup=@(
      #( '<base url>', 'zip1', '<zip2>', '<...>', '<zipn>' ),
       ( 'https://archive.org/download/MAME_0.149_ROMs/MAME_0.149_ROMs.zip/MAME 0.149 ROMs/',
-            @( 'devilfsg.zip' ) ),
+            @( 'bosco.zip', 'devilfsg.zip' ) ),
       ( 'https://archive.org/download/MAME216RomsOnlyMerged/',
             @( 'galaga.zip',   'gberet.zip',     'amidar.zip',    'frogger.zip',  'mimonkey.zip',  'scramble.zip', 'twotiger.zip',
                'dotron.zip',   'pacnpal.zip',    'dkong3.zip',    'radarscp.zip', 'pleiads.zip',   'choplift.zip', 'starjack.zip',
                'congo.zip',    'alienar.zip',    'bubbles.zip',   'joust.zip',    'robotron.zip',  'sinistar.zip', 'splat.zip',
                'stargate.zip', 'dragon_fdc.zip', 'centiped.zip',  'hharry.zip',   'luctoday.zip',  'mooncrst.zip', 'theend.zip',
                'victoryc.zip', 'finalizr.zip',   'devilfsh.zip',  'jackal.zip',   'sbasebal.zip',  'dragon32.zip', 'defender.zip',
-               'timescan.zip', 'makaimurg.zip',  'midres.zip',    'trojan.zip',   'mrdo.zip',      'gng.zip' ) ),
+               'timescan.zip', 'makaimurg.zip',  'midres.zip',    'trojan.zip',   'mrdo.zip',      'gng.zip',
+               'actfancr.zip', 'jrpacman.zip', 'junglek.zip', 'mineswpr.zip', 'pengo.zip', 'xevious.zip' ) ),
       ( 'https://archive.org/download/hbmame_0244_roms/',
             @( 'galnamco.zip', 'mappy.zip', 'pisces.zip', 'sarge.zip', 'scramble.zip', 'shollow.zip', 'tapper.zip', 'tron.zip' ) ),
-      ( 'https://myrient.erista.me/files/Internet Archive/chadmaster/fbnarcade-fullnonmerged/arcade/',
-            @( 'airduelm72.zip', 'avengersa.zip', 'avengersb.zip', 'avengersc.zip', 'gunsmokeuc.zip', 'hyprolyma.zip', 'flstoryo.zip',
-			   'nemoja.zip', 'sf2ceec.zip', 'trojanjo.zip', 'wwfsstarc.zip', 'simpsons4pe2.zip', 'mpumpkin.zip' ) ),
-      ( 'https://myrient.erista.me/files/Internet Archive/rompacker/mame-chds-roms-extras-complete/MAME 0.256 ROMs (merged)/',
-            @( 'avengers.zip', 'coco.zip', 'coco_fdc.zip', 'pang.zip', 'xevious.zip' ) ),
+      ( 'https://archive.org/download/mame-0.245-roms-split/MAME 0.245 ROMs (split)/',
+            @( 'catacomb.zip', 'yamato.zip' ) ),
+      ( 'https://archive.org/download/samsptk_202306/', # MAME ROM S (2023)
+            @( 'sxevious.zip' ) ),
       ( 'https://www.doperoms.org/files/roms/mame/GETFILE_',
             @( 'airduel.zip', 'irrmaze.zip', 'joustwr.zip', 'sinistar1.zip' ) ),
       ( 'https://mdk.cab/download/split/',
-            @( 'mpumpkin.zip' ) ),
-      ( 'https://github.com/Abdess/retroarch_system/raw/libretro/Arcade/',
-            @( 'neogeo.zip' ) )
+            @( 'backfirt.zip', 'hbarrelu.zip', 'mpumpkin.zip' ) ),
+      ( 'https://archive.org/download/insert_coin_mame/',
+            @( 'cosmccop.zip', 'jetpac_sj.zip', 'nob.zip' ) ),
+      ( 'https://github.com/user-attachments/files/25818632/',
+            @(  'adcanoe.zip' ) ),
+      ( 'https://github.com/Abdess/retrobios/raw/refs/heads/main/bios/Arcade/MAME/',
+            @(  'neogeo.zip' ) ),
+      ( 'https://archive.org/download/MAME_0.278_ROMs_non-merged_2025/MAME_0.278_ROMs_non-merged/',
+            @( 'avengers.zip', 'avengersa.zip', 'avengersb.zip', 'avengersc.zip', 'bayroute1.zip', 'ddsomjr1.zip', 'ddragon.zip', 'hsf2j1.zip' ) )
+      # login required
+      #( 'https://bda.retroroms.net/downloads/hbmame/currentroms/',
+      #      @( 'outrunm.zip' ) ),
   )
   # list of ROMs not downloadable from URLs above, using dedicated download URLs (filename may differ here)
   $romlookup=@(
+   #"( 'sf2cre.zip',         'https://bbs.xqemu.cn/thread-7138-1-1.html'       )" #only by browser, no direct download link
+   #"( 'sf2hfsce.zip',       'https://sr-street-fighter.itch.io/'              )" #only by browser, no direct download link
     ( 'zaxxon_samples.zip', 'https://www.arcadeathome.com/samples/zaxxon.zip' ), #ok
     ( 'jtbeta.zip',         'https://archive.org/download/jtkeybeta/beta.zip' )  #https://twitter.com/jtkeygetterscr1/status/1403441761721012224?s=20&t=xvNJtLeBsEOr5rsDHRMZyw
   )
@@ -390,8 +419,11 @@ function download_mame_roms {
           continue loop
         }
       }
+      Write-Host -ForegroundColor red "  ERROR: Download `'$zip`' failed"
+      return $false
     }
   }
+  return $true
 }
 
 
@@ -407,6 +439,8 @@ function mra {
   if ($arcname -eq '') { $arcname = $name }
   # replace special characters with '_' (like rom file rename of mra tool)
   $arcname = $($arcname -replace '[//?:]','_')
+  # remove tailing spaces (e.g. 'https://github.com/mist-devel/mist-binaries/blob/master/cores/arcade/Midway-Taito 8080 Hardware/Space Chaser.mra#L2')
+  $arcname = $arcname.TrimEnd()
   $setname = grep '(?<=<setname>)[^<]+' $mrafile
   if ($setname -eq '') {
     $setname = $name
@@ -521,9 +555,10 @@ function process_mra {
   -Or ((Get-Item -LiteralPath "$env:TEMP/$name.mra").LastWriteTime -gt (Get-Item -LiteralPath "$dstpath/$name.arc").LastWriteTime) `
   -Or (-not (Test-Path -LiteralPath $dstpath/$name.rom))) {
     # download rom zip archive(s)
-    download_mame_roms $MAME_ROMS $zips
-    # generate .rom and .arc file from .mra and .zip files
-    mra "$env:TEMP/$name.mra" $dstpath
+    if (download_mame_roms $MAME_ROMS $zips) {
+      # generate .rom and .arc file from .mra and .zip files
+      mra "$env:TEMP/$name.mra" $dstpath
+    }
   }
   Remove-Item -LiteralPath "$env:TEMP/$name.mra" -Force
 }
@@ -822,6 +857,7 @@ function copy_eubrunosilva_sidi_cores {
 
 
 # handlers for core specific ROM actions. $1=core src directory, $2=sd core dst directory, $3=core specific cache folder
+function atom_roms          { param($1,$2,$3) sdcopy "$1/ATOM.ROM" "$2/atom.rom" }
 function amiga_roms         { param($1,$2,$3)
                               sdcopy "$1/AROS.ROM" "$2/kick/aros.rom"
                               sdcopy "$1/HRTMON.ROM" "$SD_ROOT/hrtmon.rom"
@@ -947,8 +983,10 @@ function c64_roms           { param ($1,$2,$3)
                               expand "$3/zaxxon.zip" "$SD_ROOT/c64/"
                               expand "$3/super_zaxxon.zip" "$SD_ROOT/c64/"
                             }
+function c128_roms          { param ($1,$2,$3) sdcopy "$1/c128.rom" "$2/" }
 function coco2_roms         { param ($1,$2,$3) copy_mra_arcade_cores "$1" '' "$2" }
 function coco3_roms         { param ($1,$2,$3) sdcopy "$1/COCO3.ROM" "$2/coco3.rom" }
+function einstein_roms      { param ($1,$2,$3) sdcopy "$1/EINSTEIN.ROM" "$2/einstein.rom" }
 function enterprise_roms    { param ($1,$2,$3)
                               sdcopy "$1/ep128.rom" "$2/"
                               if (-not ( Test-Path "$2/ep128.vhd")) {
@@ -970,6 +1008,14 @@ function gba_roms           { param ($1,$2,$3)
                               }
                             }
 function ht1080z_roms       { param ($1,$2,$3) sdcopy "$1/HT1080Z.ROM" "$2/ht1080z.rom" }
+function imsai8080_roms     { param ($1,$2,$3)
+                              sdcopy "$1/IMSAI8080.ROM" "$2/imsai8080.rom"
+                              sdcopy "$1/IMSAI8080.R01" "$2/imsai8080.r01"
+                              sdcopy "$1/cpm22.dsk" "$2/"
+                              sdcopy "$1/sc2.dsk" "$2/"
+                              sdcopy "$1/wordstar.dsk" "$2/"
+                              sdcopy "$1/zorks.dsk" "$2/"
+                            }
 function intellivision_roms { param ($1,$2,$3) sdcopy "$1/intv.rom" "$2/" }
 function laser500_roms      { param ($1,$2,$3) sdcopy "$1/laser500.rom" "$2/" }
 function lm80c_roms         { param ($1,$2,$3) sdcopy "$1/lm80c.rom" "$2/" }
@@ -1077,6 +1123,7 @@ function rc2014_roms        { param ($1,$2,$3)
                               }
                             }
 function samcoupe_roms      { param ($1,$2,$3) sdcopy "$1/samcoupe.rom" "$2/" }
+function scv_roms           { param ($1,$2,$3) sdcopy "$1/scv.rom" "$2/" }
 function sidi_arcade        { param ($1,$2,$3)
                               if ($SYSTEM -ne "sidi") { return }
                               foreach ($dir in (Get-ChildItem "$1" -Directory | Select-Object -ExpandProperty FullName | Sort-Object | replace-slash)) {
@@ -1139,6 +1186,7 @@ function sidi_arcade        { param ($1,$2,$3)
                               }
                             }
 function sidi128_arcade     { param ($1,$2,$3)
+                              if ($SYSTEM -ne "sidi128") { return }
                               # use Cores/Arcade/MRA/*.mra files for SiDI128 Arcade generation
                               foreach ($f in (Get-ChildItem "$1/../../MRA" | Sort-Object -Property FullName)) {
                                 $name = (Get-Item -LiteralPath $f).Basename
@@ -1158,6 +1206,7 @@ function snes_roms          { param ($1,$2,$3) download_url 'https://archive.org
 function sourcerer_roms     { param ($1,$2,$3) download_url 'https://archive.org/download/year-based-collection-of-games-for-the-exidy-sorcerer-v-1.0/Year-Based Collection of Games for the Exidy Sorcerer v1.0.zip' "$3/" | Out-Null
                               expand "$3/Year-Based Collection of Games for the Exidy Sorcerer v1.0.zip" "$2/"
                             }
+function sordm5_roms        { param ($1,$2,$3) sdcopy "$1/SORDM5.ROM" "$2/sordm5.rom" }
 function speccy_roms        { param ($1,$2,$3) sdcopy "$1/speccy.rom" "$2/" }
 function sv328_roms         { param ($1,$2,$3) sdcopy "$1/Svi328.rom" "$2/svi328.rom" }
 function ti994a_roms        { param ($1,$2,$3) sdcopy "$1/TI994A.ROM" "$2/ti994a.rom" }
@@ -1174,7 +1223,8 @@ function tnzs_roms          { param ($1,$2,$3)
                               }
                               copy_mra_arcade_cores "$3" '' "$2"
                             }
-function tsconf_roms        {  param ($1,$2,$3)
+function ts2068_roms        { param ($1,$2,$3) sdcopy "$1/ts2068.rom" "$2/" }
+function tsconf_roms        { param ($1,$2,$3)
                               sdcopy "$1/TSConf.r*" "$SD_ROOT/"
                               if (Test-Path "$1/TSConf.vhd.zip") {
                                 expand "$1/TSConf.vhd.zip" "$SD_ROOT/"
@@ -1215,10 +1265,12 @@ function bagman_roms        { param ($1,$2,$3)
                             }
 
 $cores=@(
- #( 'core dst dir',                                   'src dir MiST',  'src dir SiDi',                                      'opt_romcopy_fn'      ),
+ #( 'core dst dir',                                   'src dir MiST',  'src dir SiDi',                                      'opt_romcopy_fn'       ),
  # Main Menu
   ( '.',                                              'menu',          'menu',                                              'menu_image'           ),
  # Computers
+  ( 'Computer/Acorn Atom',                            'atom',          'Computer/Atom',                                     'atom_roms'            ),
+  ( 'Computer/Alice MC-10',                           'alice MC-10',   'Computer/Alice MC-10'                                                      ),
   ( 'Computer/Amstrad CPC',                           'amstrad',       'Computer/AmstradCPC',                               'amstrad_cpc_roms'     ),
   ( 'Computer/Amstrad PCW',                           'AmstradPCW',    'Computer/AmstradPCW',                               'amstrad_pcw_roms'     ),
   ( 'Computer/Amiga',                                 'minimig-aga',   'Computer/Amiga',                                    'amiga_roms'           ),
@@ -1234,13 +1286,16 @@ $cores=@(
   ( 'Computer/BK0011M',                               '',              'Computer/BK0011M',                                  'bk001m_roms'          ),
   ( 'Computer/C16',                                   'c16',           'Computer/C16',                                      'c16_roms'             ),
   ( 'Computer/C64',                                   'fpga64',        'Computer/C64',                                      'c64_roms'             ),
-  ( 'Computer/Coleco Adam',                           '',              'Computer/Adam'                                                             ),
+  ( 'Computer/C128',                                  'c128',          '',                                                  'c128_roms'            ),
+  ( 'Computer/Coleco Adam',                           'adam',          'Computer/Adam'                                                             ),
   ( 'Computer/Color Computer 2',                      'coco2',         'Computer/CoCo',                                     'coco2_roms'           ),
   ( 'Computer/Color Computer 3',                      '',              'Computer/Coco3',                                    'coco3_roms'           ),
   ( 'Computer/EG2000 Colour Genie',                   '',              'Computer/eg2000'                                                           ),
+  ( 'Computer/Einstein',                              'einstein',      'Computer/einstein',                                 'einstein_roms'        ),
   ( 'Computer/Enterprise 128',                        'enterprise',    'Computer/ElanEnterprise',                           'enterprise_roms'      ),
   ( 'Computer/Exidy Sorcerer',                        'sorcerer',      'Computer/Sorcerer',                                 'sourcerer_roms'       ),
   ( 'Computer/HT1080Z School Computer',               'ht1080z',       'Computer/HT1080Z',                                  'ht1080z_roms'         ),
+  ( 'Computer/IMSAI 8080',                            'imsai8080',     'Computer/Imsai8080',                                'imsai8080_roms'       ),
   ( 'Computer/Laser500',                              '',              'Computer/Laser500',                                 'laser500_roms'        ),
   ( 'Computer/Luxor ABC80',                           'abc80',         'Computer/ABC80'                                                            ),
   ( 'Computer/Lynx',                                  '',              'Computer/CamputerLynx'                                                     ),
@@ -1248,6 +1303,7 @@ $cores=@(
   ( 'Computer/MSX1',                                  '',              'Computer/MSX1',                                     'msx1_roms'            ),
   ( 'Computer/MSX2+',                                 'msx',           'Computer/MSX',                                      'msx2p_roms'           ),
   ( 'Computer/Next186',                               'next186',       'Computer/Next186',                                  'next186_roms'         ),
+  ( 'Computer/Orao',                                  'orao',          'Computer/Orao'                                                             ),
   ( 'Computer/Oric',                                  'oric',          'Computer/Oric',                                     'oric_roms'            ),
   ( 'Computer/PCXT',                                  'pcxt',          'Computer/PC XT',                                    'pcxt_roms'            ),
   ( 'Computer/PET2001',                               'pet2001',       'Computer/PET2001',                                  'pet2001_roms'         ),
@@ -1255,9 +1311,11 @@ $cores=@(
   ( 'Computer/Robotron Z1013',                        'z1013',         ''                                                                          ),
   ( 'Computer/Sinclair QL',                           'ql',            'Computer/QL',                                       'ql_roms'              ),
   ( 'Computer/SAM Coupe',                             'samcoupe',      'Computer/SamCoupe',                                 'samcoupe_roms'        ),
+  ( 'Computer/Sord M5',                               'sordm5',        'Computer/Sordm5',                                   'sordm5_roms'          ),
   ( 'Computer/Speccy',                                '',              'Computer/Speccy',                                   'speccy_roms'          ),
-  ( 'Computer/Spectravideo SV-328',                   'svi328',        'svi328',                                            'sv328_roms'           ),
+  ( 'Computer/Spectravideo SV-328',                   'svi328',        'Computer/svi328',                                   'sv328_roms'           ),
   ( 'Computer/TI99-4A',                               'ti994a',        'Computer/TI994A',                                   'ti994a_roms'          ),
+  ( 'Computer/Timex Sinclair 2068',                   'ts2068',        'Computer/ts2068',                                   'ts2068_roms'          ),
   ( 'Computer/TSConf',                                'tsconf',        'Computer/TSConf',                                   'tsconf_roms'          ),
   ( 'Computer/VIC20',                                 'vic20',         'Computer/VIC20',                                    'vic20_roms'           ),
   ( 'Computer/Videoton TV Computer',                  'tvc',           'Computer/VideotonTVC',                              'tvc_roms'             ),
@@ -1282,11 +1340,14 @@ $cores=@(
   ( 'Console/Nintendo SNES',                          'snes',          'Console/SNES',                                      'snes_roms'            ),
   ( 'Console/PC Engine',                              'pcengine',      'Console/PCE',                                       'turbogfx_roms'        ),
   ( 'Console/SEGA MasterSystem',                      'sms',           'Console/SMS',                                       'sms_roms'             ),
+  ( 'Console/SEGA Master System Game Gear',           '',              'Console/SMS-GameGear'                                                      ),
   ( 'Console/SEGA Master System Nuked',               'sms-nuked',     'Console/NukedSMS',                                  'sms_roms'             ),
+  ( 'Console/Sega 32X',                               '',              'Console/S32X'                                                              ),
   ( 'Console/SONY Playstation',                       '',              'Console/PSX',                                       'psx_roms'             ),
-  ( 'Console/Supervision',                            '',              'Console/Supervision'                                                       ),
+  ( 'Console/Super Cassette Vision',                  'scv',           'Console/SCV',                                       'scv_roms'             ),
   ( 'Console/Vectrex',                                '',              'Console/Vectrex',                                   'vectrex_roms'         ),
   ( 'Console/Videopac',                               'videopac',      'Console/VIDEOPAC',                                  'videopac_roms'        ),
+  ( 'Console/Watara SuperVision',                     '',              'Console/Supervision'                                                       ),
  # MiST/SiDi/SiDi128 Arcade folders - install arcade cores by system dependent ROM handler function
   ( 'Arcade/MiST',                                    'arcade',        '',                                                  'mist_arcade'          ),
   ( 'Arcade/SiDi',                                    '',              'Arcade/SiDi',                                       'sidi_arcade'          ),

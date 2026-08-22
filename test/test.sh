@@ -4,7 +4,7 @@ maxloops=2
 keeprepos=0
 for i in "$@"; do
   case $i in
-    -k|--keeprepos)
+    -k|--keep)
       keeprepos=1;;
     -n=*|--loops=*)
       maxloops="${i#*=}";;
@@ -23,7 +23,7 @@ for i in "$@"; do
   esac
   shift # past argument=value
 done
-required=$(echo $((55000000 + 50000000 * $maxloops))) # appr. 55GB repos/archives + 50GB SD content (mist/sidi/sidi128) each loop
+required=$(echo $((55000000 + 90000000 * $maxloops))) # appr. 55GB repos/archives + 90GB SD content (mist/sidi/sidi128) each loop
 
 
 if which shellcheck 1>/dev/null; then
@@ -93,13 +93,14 @@ for scr in Linux/genSD.sh Windows/genSD.ps1; do
       (grep -i 'rbf\" not found' "$dstSD/log.txt" | sort | uniq)                               | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
 
       echo -e -n "\n\n\e[1mMissing MAME ROMs:\n\e[1;31m"                                       | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+      (grep -i 'ERROR: Download ' "$dstSD/log.txt" | sort | uniq)                              | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
       (grep -i 'zip file not found' "$dstSD/log.txt" | sort | uniq)                            | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
 
       echo -e -n "\n\n\e[0;1mMAME ROMs with wrong checksum:\n\e[1;31m"                         | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
-      (grep -i -B 1 --no-group-separator 'md5 mismatch' "$dstSD/log.txt" | awk '!x[$0]++')     | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+      (grep -i -B 2 --no-group-separator 'md5 mismatch' "$dstSD/log.txt" | awk '!x[$0]++')     | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
 
       echo -e -n "\n\n\e[0;1mMAME ROMs with missing parts:\n\e[1;31m"                          | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
-      (grep -i -B 1 --no-group-separator 'not found in zip' "$dstSD/log.txt" | awk '!x[$0]++') | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
+      (grep -i -B 2 --no-group-separator 'not found in zip' "$dstSD/log.txt" | awk '!x[$0]++') | sed -ru $ansifilter | tee -a "$dstSD/log.txt"
 
       # some statistics
       echo -e -n "\n\n\e[0;1mNumber of .rbf files\e[0m:" \

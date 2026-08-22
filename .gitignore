@@ -1,5 +1,5 @@
 */repos
-*/SD
+*/SD*
 */tools
-test/Linux/*
-test/Windows/*
+test/Linux*/*
+test/Windows*/*

@@ -12,10 +12,10 @@ After executing this script appr.
 
 | |MiST|SiDi|SiDi128|
 |---|---:|---:|---:|
-|.rbf|~260|~220|~200|
-|.arc|~1340|~1220|~1250|
-|.rom|~1380|~1260|~1290|
-|.ram|~390|~330|~350 |
+|.rbf|~300|~260|~220|
+|.arc|~1450|~1220|~1770|
+|.rom|~1500|~1260|~1860|
+|.ram|~420|~360|~470 |
 
 files are collected/generated.
 
@@ -154,7 +154,7 @@ The project contains a [workspace file](https://code.visualstudio.com/docs/edito
 Best practice here is to simply open the project by double-click on the [genSD.code-workspace](genSD.code-workspace) file. \
 VisualStudio Code will open the project and install/configure the required plugins.
 
-For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1470-L1490) left disabled in the scripts.
+For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1533-L1575) left disabled in the scripts.
 
 A [configuration](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) file for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test.bat](test/test.bat#L15) script
 
@@ -204,7 +204,8 @@ Please keep in mind that each test execution will consume about 50GB of HDD spac
 
 - **exFAT SD card, but MiST/SiDi firmware version too old** \
   If the firmware version of your system is older than 210525 (without support for **exFAT** drives) means you can't read an exFAT formated SD card. \
-  This can be solved by
+  As a result of this you won't be able to upgrade the firmware from an **exFAT** formatted SD card. \
+  __Solution__: Start upgrading your **MiST**/**SiDi**/**SiDi128** with an **FAT** or **FAT32** formated SD card:
   1. format an SD card with **FAT** or **FAT32** filesystem
   2. copy `core.rbf` and `firmware.upg` (>= 210525) to the root of this SD card
   3. boot your system with this card
@@ -214,22 +215,18 @@ Please keep in mind that each test execution will consume about 50GB of HDD spac
 - **executing the script directly from SD card** \
   Executing the script directly from an SD card (script located on the SD card) only works if the SD card is formated using **exFAT** file system. \
   With an FAT/FAT32 formated drive the script will fail (the size of the [jtbin](https://github.com/jotego/jtbin) repository (appr. 7GB) exceeds the max. file size for an FAT/FAT32 formatted card (4GB)). \
-  And (if executed on a Linux host) the e**x**ecutable flag of the script and the downloaded [mra tool](https://github.com/mist-devel/mra-tools-c/tree/master/release) would be missing (`Permission denied" ` error).
+  And (if executed on a Linux host) the e**x**ecutable flag of the script and the downloaded [mra tool](https://github.com/mist-devel/mra-tools-c/tree/master/release) would be missing (`Permission denied` error).
 - **.mra parsing of ROM files** \
   The ROM file names parsed from the `.mra` files refer a MAME version. But unfortunetly many ROMS, if fetched from their referred MAME version, don't match. \
-  I tried to find a best matching [set of download URLs](Linux/genSD.sh#L211-L238) incl. some [extra handling](Linux/genSD.sh#L240-L264) and [special downloads](Linux/genSD.sh#L302-L303), but for some ROM archives `mra` still complains: \
+  I tried to find a best matching [set of download URLs](Linux/genSD.sh#L232-L264) incl. some [extra handling](Linux/genSD.sh#L266-L299) and [special downloads](Linux/genSD.sh#L330-L331), but for some ROM archives `mra` still complains: \
+  - **ROMs not scriptable (manual downloadab by browser)**:
+    - `outrunm.zip`  (from [bda.retroroms.net](https://bda.retroroms.net/downloads/hbmame/currentroms/), login/account required)
+    - `sf2hfsce.zip` (from [sr-street-fighter.itch.io](https://sr-street-fighter.itch.io)) \
+      These files can be manually downloaded and copied to `repos/mame` folder.
   - **ROMs not found**:
-    - `kchamp2p.zip`
-    - `timescan3.zip`
-  - **ROMs found, but with MD5 mismatch or missing parts**:
-    - `btime.zip`
-    - `journey.zip`
-    - `xevious.zip`
-    - `clubpacm.rom`
-    - `combh.zip`
-    - `wbml.zip`
-    - `lottofun.rom`
-    - `spdball.zip`
+    - `sf2cre.zip` (only found version in [bbs.xqemu.cn](https://bbs.xqemu.cn/thread-7138-1-1.html) has missing parts)
+  - **ROMs with MD5 mismatch or missing parts**:
+    - several
 
   I would appreciate any ideas to improve/fix this.
 - **Missing Jotego Cores** \
@@ -285,7 +282,7 @@ Thanks here to Jotego for his [jtbin](https://github.com/jotego/jtbin) Arcade re
 - [Alastair M. Robinson repositories](https://github.com/robinsonb5)
 - [mra tool](https://github.com/mist-devel/mra-tools-c)
 - [Internet Archive](https://archive.org)
-- [Myrient Video Game Preservation](https://myrient.erista.me)
+- ~~[Myrient Video Game Preservation](https://myrient.erista.me)~~ (down)
 
 
 ### Alternatives to this repository
