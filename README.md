@@ -160,7 +160,7 @@ A [configuration](https://learn.microsoft.com/en-us/powershell/utility-modules/p
 
 ## Testing
 There are [test scripts](test) to be executed with Linux and Windows. \
-Threse scripts will
+These scripts will
 - do some script checking
 - generate a destination set for
    - mist

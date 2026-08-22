@@ -39,7 +39,7 @@ function check_dependencies {
   if ($isLinux) {
     if (-not (&which unzip  )) { &sudo apt install -y unzip   };
     if (-not (&which unrar  )) { &sudo apt install -y unrar   };
-    if (-not (&which 7z     )) { &sudo apt install -y 7z      };
+    if (-not (&which 7z     )) { &sudo apt install -y 7zip    };
     if (-not (&which git    )) { &sudo apt install -y git     };
     if (-not (&which fatattr)) { &sudo apt install -y fatattr };
 
@@ -1139,9 +1139,12 @@ function sidi_arcade        { param ($1,$2,$3)
                               }
                             }
 function sidi128_arcade     { param ($1,$2,$3)
-                              if ($SYSTEM -eq "sidi128") {
-                                sdcopy "$1/*.*" "$2/"
+                              # use Cores/Arcade/MRA/*.mra files for SiDI128 Arcade generation
+                              foreach ($f in (Get-ChildItem "$1/../../MRA" | Sort-Object -Property FullName)) {
+                                $name = (Get-Item -LiteralPath $f).Basename
+                                process_mra "$f" "$2/$name" "$1"
                               }
+                              Remove-Item "$2/$((Get-Item -Path $f).Name).rbf" | Out-Null
                             }
 function sms_roms           { param ($1,$2,$3)
                               download_url "https://archive.org/download/cylums-sega-master-system-rom-collection/Cylum's Sega Master System ROM Collection (02-16-2021).zip/Phantasy Star.zip" "$3/" | Out-Null
