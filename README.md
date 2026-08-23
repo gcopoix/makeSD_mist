@@ -5,7 +5,7 @@ It tries to create a complete as possible collection of cores and their required
 There are seperate scripts for [Linux](Linux) and [Windows](Windows) hosts. \
 With PowerShell [installed](https://learn.microsoft.com/de-de/powershell/scripting/install/installing-powershell-on-linux) on a Linux system the [genSD.ps1](Windows/genSD.ps1) script is executable on a Linux system too.
 
-This script collects the work of many other contributors (FPGA, Hardware, Software, ...) to generate a 'distribution' for the systems mentioned above. \
+This script collects the work of many other contributors (FPGA, Hardware, Software, ...) to generate a **distribution** for the systems mentioned above. \
 Thanks to all these contributors for their work (see [links to repositories](#Links)).
 
 After executing this script appr.
@@ -29,12 +29,10 @@ Get the scripts by
   ```
 
 The SD card must be
-- at least 32GB
+- at least 32GB (better 64GB)
 - formatted with **FAT**, **FAT32** or **exFAT** (preferred!)
 
 or use a folder on HDD with the same available disk space.
-
-Note: As the .mra parsing and download of the MAME ROMs has changed significantly, please delete your `repos/mame` [cache folder](#cache-folders) before executing this script to make use of the enhanced MRA ROM download.
 
 ## Usage
 simply call the script with minor parameters:
@@ -45,7 +43,7 @@ with
 option|description|example
 ---|---|---
 -s|Target system (mist, sidi or sidi128).<br>This parameter is mandatory|-s mist<br>-s sidi<br>-s sidi128
--d|Destination folder the target folders and files are generated.<br>If this option isn't specified, `SD\sidi` will be used by default.|-d /media/SD-Card<br>-d E:
+-d|Destination folder the target folders and files are generated.<br>If this option isn't specified, `SD\<target>` will be used by default.|-d /media/SD-Card<br>-d E:
 -h|Show some help text.|-h
 
 ## Examples
@@ -116,7 +114,7 @@ The generated folder structure:
 ├── <additional files unfortunately required by some cores in root folder>
 ├── ...
 │
-├── core.rbf      # <- menu core (named sidi128.rbf on SiDi128)
+├── core.rbf      # menu core (named sidi128.rbf on SiDi128)
 └── firmware.upg  # latest ARM firmware update file
 ```
 The Arcade cores are installed with their required ROM files. \
@@ -145,18 +143,21 @@ It is a good idea to keep these folders as the next run will be much faster (git
 This saves more than 10GB of data not being fetched again.
 
 ## Developing
-The project contains a [workspace file](https://code.visualstudio.com/docs/editor/workspaces) for [Visual Studio Code](https://code.visualstudio.com) with pre-configured
-- plugin [recommendations](genSD.code-workspace#L13-L16)
+The project contains a development setup for [Visual Studio Code](https://code.visualstudio.com) with pre-configured
+- plugin [recommendations](.vscode/extensions.json)
    - [Bash Debugger](https://marketplace.visualstudio.com/items?itemName=rogalmic.bash-debug)
    - [PowerShell Debugger](https://marketplace.visualstudio.com/items?itemName=ms-vscode.powershell)
-- script [debug/launch](genSD.code-workspace#L39-L63) settings
+- script [debug/launch](.vscode/launch.json) settings
 
-Best practice here is to simply open the project by double-click on the [genSD.code-workspace](genSD.code-workspace) file. \
+Best practice here is to simply open the project by
+- Double-click on the [genSD.code-workspace](genSD.code-workspace) file or
+- Right mouse button on this folder and "Open with VisualStudio Code".
+
 VisualStudio Code will open the project and install/configure the required plugins.
 
 For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1533-L1575) left disabled in the scripts.
 
-A [configuration](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) file for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test.bat](test/test.bat#L15) script
+A [configuration file](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test.bat](test/test.bat#L15) script
 
 ## Testing
 There are [test scripts](test) to be executed with Linux and Windows. \
@@ -167,7 +168,7 @@ These scripts will
    - sidi
    - sidi128
 
-  with each 2 runs:
+  with each 2 runs by default:
    - 1st: run with empty cache (=initial run)
    - 2nd: run with cache and SD (=update run)
 
@@ -184,6 +185,14 @@ See [Known Issues](#known-issues) for details (the test execution would break an
 
 Additionally it is always a good idea to compare the Linux and Windows generated sets and logs. \
 Please keep in mind that each test execution will consume about 50GB of HDD space (the Linux version even twice as it will test the PowerShell script too) - not talking about the test run time (several hours)
+
+Top optimize/speed up the test run 2 options may be useful:
+
+|Option|default|meaning|
+|:---|---:|:---|
+|--loops=n|2|Number of loops the destination SD set is created<br>By default (--loops=2) the 1st run does a full fetch of all repos/roms,<br>the 2nd run is the 'update run' (repos/roms avaible in cache folders)|
+|--keep||Keep repositories after each run.<br>This will speedup creation|
+
 
 ## Known issues
 - **exFAT and DOS attributes (Linux version only)** \
@@ -229,6 +238,9 @@ Please keep in mind that each test execution will consume about 50GB of HDD spac
     - several
 
   I would appreciate any ideas to improve/fix this.
+
+  And: Please keep in mind that unfortunetly MAME ROM archive sites come and go - matching download sites may disappear (e.g. [https://myrient.erista.me](https://myrient.erista.me) closed down 04/2026, which has been one of my favorite sites for ROM downloads). \
+  This may result in MAME ROM files being downloaded in a wrong version (leading to CRC mismatch or missing parts) or not found at all.
 - **Missing Jotego Cores** \
   Some .mra files in the Jotego repository refer missing .rbf files in the [mist](https://github.com/jotego/jtbin/tree/master/mist), [sidi](https://github.com/jotego/jtbin/tree/master/sidi) or [sidi128](https://github.com/jotego/jtbin/tree/master/sidi128) folders. The reason for the missing cores are
   - insufficient target board FPGA ressources and
@@ -282,7 +294,7 @@ Thanks here to Jotego for his [jtbin](https://github.com/jotego/jtbin) Arcade re
 - [Alastair M. Robinson repositories](https://github.com/robinsonb5)
 - [mra tool](https://github.com/mist-devel/mra-tools-c)
 - [Internet Archive](https://archive.org)
-- ~~[Myrient Video Game Preservation](https://myrient.erista.me)~~ (down)
+- ~~[Myrient Video Game Preservation](https://myrient.erista.me)~~ (down since 04/2026)
 
 
 ### Alternatives to this repository

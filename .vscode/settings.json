@@ -1,0 +1,13 @@
+{
+	// See https://code.visualstudio.com/docs/configure/settings#_settings-json-file
+	// for the documentation about the settings.json format
+	// https://code.visualstudio.com/docs/editor/variables-reference
+
+	"files.trimTrailingWhitespace": true,
+	"files.insertFinalNewline": true,
+	"files.trimFinalNewlines": true,
+	"powershell.codeFormatting.autoCorrectAliases": true,
+	"powershell.scriptAnalysis.enable": true,
+	"powershell.scriptAnalysis.settingsPath": ".vscode/PSScriptAnalyzerSettings.psd1",
+	"powershell.developer.waitForSessionFileTimeoutSeconds": 1000,
+}
