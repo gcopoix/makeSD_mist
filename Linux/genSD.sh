@@ -609,6 +609,8 @@ copy_gehstock_mist_cores() {
     "( 'williams2.rbf'    'william2.rbf' )" # Arcade_MiST/Williams 6809 rev.2 Hardware
    #"( 'craterraider.rbf' 'crater.rbf'   )" # Arcade_MiST/Midway MCR Scroll
    #"( 'spyhunter.rbf'    'spyhunt.rbf'  )" # Arcade_MiST/Midway MCR Scroll
+    "( 'AppleII_MiST.rbf' ''             )" # drop Computer_MiST/AppleII_MiST (newer version on MiST/SiDi repos)
+    "( 'Orao_MiST.rbf'    ''             )" # drop Computer_MiST/ORAO_MiST (newer version on MiST/SiDi repos)
   )
   # get Gehstock git
   local srcroot="$GIT_ROOT/MiST/gehstock"
@@ -627,6 +629,8 @@ copy_gehstock_mist_cores() {
         eval "item=$item"
         if [ "$name" = "${item[0]}" ]; then
           name=${item[1]}
+          if [ -z "$name" ]; then
+            continue 2 # skip this core (e.g. ORAO_MiST)
           break
         fi
       done
@@ -905,6 +909,9 @@ atari2600_roms()       { download_url 'https://archive.org/compress/atari-2600-c
                          for dir in $(find "$3" -mindepth 1 -maxdepth 1 -type d | sort); do
                            cp -pur "$dir" "$SD_ROOT/ma2601/" # core presents roms by default from /MA2601 folder
                          done
+                       }
+atari2600_arm_roms()   { download_url 'https://forums.atariage.com/applications/core/interface/file/attachment.php?id=646428' "$3/draconian_20171020_RC8.bin"
+                         #sdcopy "$3/draconian_20171020_RC8.bin" "$2/ma2601/draconian.bin"
                        }
 atari5200_roms()       { download_url 'https://archive.org/download/atari-5200-rom-collection/Atari 5200 ROM Collection.zip' "$3/"
                          expand "$3/Atari 5200 ROM Collection.zip" "$3/"
@@ -1222,7 +1229,7 @@ cores=(
   "( 'Computer/BK0011M'                               ''              'Computer/BK0011M'                                  bk0011m_roms         )"
   "( 'Computer/C16'                                   'c16'           'Computer/C16'                                      c16_roms             )"
   "( 'Computer/C64'                                   'fpga64'        'Computer/C64'                                      c64_roms             )"
-  "( 'Computer/C128'                                  'c128'          ''                                                  c128_roms            )"
+  "( 'Computer/C128'                                  'c128'          'Computer/C128'                                     c128_roms            )"
   "( 'Computer/Coleco Adam'                           'adam'          'Computer/Adam'                                     adam_roms            )"
   "( 'Computer/Color Computer 2'                      'coco2'         'Computer/CoCo'                                     coco2_roms           )"
   "( 'Computer/Color Computer 3'                      ''              'Computer/Coco3'                                    coco3_roms           )"
@@ -1262,6 +1269,7 @@ cores=(
   "( 'Computer/ZX Spectrum 48k'                       ''              'Computer/ZXSpectrum48K_Kyp'                                             )"
  # Consoles
   "( 'Console/Atari 2600'                             'a2600'         'Console/A2600'                                     atari2600_roms       )"
+  "( 'Console/Atari 2600 ARM'                         'a2600-ARM'     'Console/A2600-ARM'                                 atari2600_arm_roms   )"
   "( 'Console/Atari 5200'                             'atari5200'     'Console/A5200'                                     atari5200_roms       )"
   "( 'Console/Atari 7800'                             'atari7800'     'Console/A7800'                                     atari7800_roms       )"
   "( 'Console/Astrocade'                              'astrocade'     'Console/Astrocade'                                                      )"

@@ -650,9 +650,11 @@ function copy_gehstock_mist_cores {
   $rbflookup = @(
    #( 'src rbf name',     'dst rbf name' ),
     ( 'time_pilot.rbf',   'timeplt.rbf'  ), # Arcade_MiST/Konami Timepilot Hardware
-    ( 'williams2.rbf',    'william2.rbf' )  # Arcade_MiST/Williams 6809 rev.2 Hardware
+    ( 'williams2.rbf',    'william2.rbf' ), # Arcade_MiST/Williams 6809 rev.2 Hardware
    #( 'craterraider.rbf', 'crater.rbf'   )  # Arcade_MiST/Midway MCR Scroll
    #( 'spyhunter.rbf',    'spyhunt.rbf'  )  # Arcade_MiST/Midway MCR Scroll
+    ( 'AppleII_MiST.rbf', ''             ), # drop Computer_MiST/AppleII_MiST (newer version on MiST/SiDi repos)
+    ( 'Orao_MiST.rbf',    ''             )  # drop Computer_MiST/ORAO_MiST (newer version on MiST/SiDi repos)
   )
   # get Gehstock git
   $srcroot="$GIT_ROOT/MiST/gehstock"
@@ -670,6 +672,9 @@ function copy_gehstock_mist_cores {
       foreach ($item in $rbflookup) {
         if ($name -eq $item[0]) {
           $name = $item[1]
+          if ($name -eq '') {
+            continue 2 # drop this core (newer version on MiST/SiDi repos)
+          }
           break
         }
       }
@@ -942,6 +947,10 @@ function atari2600_roms     { param ($1,$2,$3)
                               foreach ($dir in (Get-ChildItem "$3" -Directory | Select-Object -ExpandProperty FullName | Sort-Object | replace-slash)) {
                                 sdcopy "$dir" "$SD_ROOT/ma2601/" # core presents roms by default from /MA2601 folder
                               }
+                            }
+function atari2600_arm_roms { param ($1,$2,$3)
+                              download_url 'https://forums.atariage.com/applications/core/interface/file/attachment.php?id=646428' "$3/draconian_20171020_RC8.bin" | Out-Null
+                              #sdcopy "$3/draconian_20171020_RC8.bin" "$2/draconian.bin"
                             }
 function atari5200_roms     { param ($1,$2,$3)
                               download_url 'https://archive.org/download/atari-5200-rom-collection/Atari 5200 ROM Collection.zip' "$3/" | Out-Null
@@ -1286,7 +1295,7 @@ $cores=@(
   ( 'Computer/BK0011M',                               '',              'Computer/BK0011M',                                  'bk001m_roms'          ),
   ( 'Computer/C16',                                   'c16',           'Computer/C16',                                      'c16_roms'             ),
   ( 'Computer/C64',                                   'fpga64',        'Computer/C64',                                      'c64_roms'             ),
-  ( 'Computer/C128',                                  'c128',          '',                                                  'c128_roms'            ),
+  ( 'Computer/C128',                                  'c128',          'Computer/C128',                                     'c128_roms'            ),
   ( 'Computer/Coleco Adam',                           'adam',          'Computer/Adam'                                                             ),
   ( 'Computer/Color Computer 2',                      'coco2',         'Computer/CoCo',                                     'coco2_roms'           ),
   ( 'Computer/Color Computer 3',                      '',              'Computer/Coco3',                                    'coco3_roms'           ),
@@ -1326,6 +1335,7 @@ $cores=@(
   ( 'Computer/ZX Spectrum 48k',                       '',              'Computer/ZXSpectrum48K_Kyp'                                                ),
  # Consoles
   ( 'Console/Atari 2600',                             'a2600',         'Console/A2600',                                     'atari2600_roms'       ),
+  ( 'Console/Atari 2600 ARM',                         'a2600-ARM',     'Console/A2600-ARM',                                 'atari2600_arm_roms'   ),
   ( 'Console/Atari 5200',                             'atari5200',     'Console/A5200',                                     'atari5200_roms'       ),
   ( 'Console/Atari 7800',                             'atari7800',     'Console/A7800',                                     'atari7800_roms'       ),
   ( 'Console/Astrocade',                              'astrocade',     'Console/Astrocade'                                                         ),
