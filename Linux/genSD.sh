@@ -630,7 +630,9 @@ copy_gehstock_mist_cores() {
         if [ "$name" = "${item[0]}" ]; then
           name=${item[1]}
           if [ -z "$name" ]; then
-            continue 2 # skip this core (e.g. ORAO_MiST)
+            echo -e "\e[1;33m Dropped '$dir'\e[0m\n"
+            continue 2
+          fi
           break
         fi
       done
@@ -640,14 +642,14 @@ copy_gehstock_mist_cores() {
           process_mra "$f" "$dst" ''
         done
       # elif ??; then
-	  #   TODO: some Gehstock .mra files have no rbf entry.
-	  else
+      # TODO: some Gehstock .mra files have no rbf entry.
+      else
         # get .rbf files only (keep rbf filename)
         name=$(basename "$rbf"); name=${name//'_MiST'/};
         echo -e "\n${rbf//$GIT_ROOT\//}:"
         sdcopy "$rbf" "$dst/$name"
         set_system_attr "$dst"
-	  fi
+      fi
     done # for rbf
 
     # get .rom file(s)
@@ -1173,10 +1175,10 @@ ts2068_roms()          { sdcopy "$1/ts2068.rom" "$2/"; }
 tsconf_roms()          { cp -pu "$1/TSConf.r"* "$SD_ROOT/"
                          if [ -f "$1/TSConf.vhd.zip" ]; then
                            expand "$1/TSConf.vhd.zip" "$SD_ROOT/"
-						 else
+                         else
                            download_url "https://github.com/mist-devel/mist-binaries/raw/master/cores/tsconf/TSConf.vhd.zip" "$3/"
                            expand "$3/TSConf.vhd.zip" "$SD_ROOT/"
-						 fi
+                         fi
                        }
 turbogfx_roms()        { download_url 'https://archive.org/download/mister-console-bios-pack_theypsilon/MiSTer_Console_BIOS_PACK.zip/TurboGrafx16.zip' "$3/"
                          expand "$3/TurboGrafx16.zip" "$3/"
@@ -1440,7 +1442,7 @@ copy_sidi_cores() {
             $hdl "$dir" "$dstroot/$dst" "$MISC_FILES/$(basename "$dst")"
           fi
           continue 2
-		fi
+        fi
       done
 
       if ([ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rbf' 2>/dev/null)" ] || [ ! -z "$(find "$dir" -maxdepth 1 -iname '*.rar' 2>/dev/null)" ]); then

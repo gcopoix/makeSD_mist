@@ -663,17 +663,14 @@ function copy_gehstock_mist_cores {
   # find all cores
   foreach ($dir in (Get-ChildItem $srcroot/*/. -Directory -Depth 0 | Sort-Object -Property FullName | replace-slash)) {
     $dst = "$dstroot$(($dir.Replace($srcroot,'') -ireplace '_MiST', '').Replace('/Arcade/','/Arcade/Gehstock/'))"
-    foreach ($f in (Get-ChildItem $dir/*.mra -Recurse | Where-Object { !( $_ | Select-String '<rbf>') } | Select-Object -ExpandProperty FullName | Sort-Object)) {
-      # TODO: some Gehstock .mra files have no <rbf> entry.
-      Write-Host -ForegroundColor red "`r`nMissing `'<rbf>...</rbf>`' information in `'$($f.Replace("$srcroot/",''))`'"
-    }
     foreach ($rbf in (Get-ChildItem $dir -Include '*.rbf' -Recurse | Select-Object -ExpandProperty FullName | Sort-Object | replace-slash)) {
       $name = $((Split-Path $rbf -Leaf).ToLower() -ireplace '_MiST', '')
       foreach ($item in $rbflookup) {
         if ($name -eq $item[0]) {
           $name = $item[1]
           if ($name -eq '') {
-            continue 2 # drop this core (newer version on MiST/SiDi repos)
+            Write-Host -ForegroundColor yellow " Dropped `'$dir`'"
+            continue 2
           }
           break
         }
