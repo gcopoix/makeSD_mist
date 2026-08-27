@@ -424,17 +424,6 @@ process_mra() {
   local dstpath=$2 # $2: destination base folder
   local rbfpath=$3 # $3: source rbf folder - if empty don't copy .rbf file
 
-  local rbflookup=(
-    #( 'mra .rbf filename reference'                    'real file name'  )"
-    "( 'Inferno (Williams)'                             'williams2'       )"
-    "( 'Joust 2 - Survival of the Fittest (revision 2)' 'williams2'       )"
-    "( 'Mystic Marathon'                                'williams2'       )"
-    "( 'Turkey Shoot'                                   'williams2'       )"
-    "( 'Power Surge'                                    'time_pilot_mist' )"
-    "( 'Time Pilot'                                     'time_pilot_mist' )"
-    "( 'Journey'                                        'journey'         )"
-  )
-
   # parse informations from .mra file
   # get name (1st: <name> tag information, 2nd: use .mra filename
   local name=$(grep -oP '(?<=<name>)[^<]+' "$mrafile")
@@ -470,19 +459,12 @@ process_mra() {
   if [ ! -z "$rbfpath" ]; then
     # get correct core name
     rbfpath=${rbfpath//'/InWork'/}; rbfpath=${rbfpath//'/meta'/}
-    local rlu srcrbf=$rbf
-    # lookup non-matching filenames <-> .rbf name references in .mra file
-    for rlu in "${rbflookup[@]}"; do
-      eval "rlu=$rlu"
-      if [ "${rlu[0]}" = "$name" ]; then
-        if [ "$(find "$rbfpath/" -maxdepth 1 -iname "${rlu[1]}.rbf" 2>/dev/null)" != '' ]; then
-          srcrbf=${rlu[1]}
-          break
-        fi
-      fi
-    done
-    # make source file case insensitive
-    srcrbf=$(find "$rbfpath/" -maxdepth 1 -iname "$srcrbf.rbf")
+    # find source file case insensitive
+    local srcrbf=$(find "$rbfpath/" -maxdepth 1 -iname "$rbf.rbf")
+    # try source file with system as part of filename (e.g. ) case insensitive
+    if [ -z "$srcrbf" ]; then
+      srcrbf=$(find "$rbfpath/" -iname "${rbf}_$SYSTEM*.rbf" | sort -fk 1nr | head -1)
+    fi
 
     # copy .rbf file to destination folder and hide from menu (as .arc file will show up)
     if [ -f "$srcrbf" ]; then
@@ -905,12 +887,10 @@ atarist_roms()         { download_url 'https://github.com/mist-devel/mist-binari
                          download_url 'https://github.com/mist-devel/mist-binaries/raw/master/cores/mist/disk_a.st' "$2/"
                        }
 atari800_roms()        { sdcopy "$1/A800XL.ROM" "$2/a800xl.rom"; }
-atari2600_roms()       { download_url 'https://archive.org/compress/atari-2600-champion-collection-updated' "$3/atari-2600-collection.zip"
-                         expand "$3/atari-2600-collection.zip" "$3/"
+atari2600_roms()       { download_url 'https://www.atarimania.com/roms/Atari-2600-VCS-ROM-Collection.zip' "$3/"
+                         expand "$3/Atari-2600-VCS-ROM-Collection.zip" "$3/"
                          makedir "$SD_ROOT/ma2601/"
-                         for dir in $(find "$3" -mindepth 1 -maxdepth 1 -type d | sort); do
-                           cp -pur "$dir" "$SD_ROOT/ma2601/" # core presents roms by default from /MA2601 folder
-                         done
+                         cp -pu "$3/ROMS/"* "$SD_ROOT/ma2601/" # core presents roms by default from /MA2601 folder
                        }
 atari2600_arm_roms()   { download_url 'https://forums.atariage.com/applications/core/interface/file/attachment.php?id=646428' "$3/draconian_20171020_RC8.bin"
                          #sdcopy "$3/draconian_20171020_RC8.bin" "$2/ma2601/draconian.bin"
@@ -1076,7 +1056,7 @@ samcoupe_roms()        { sdcopy "$1/samcoupe.rom" "$2/"; }
 scv_roms()             { sdcopy "$1/scv.rom" "$2/"; }
 sidi_arcade()          { if [ $SYSTEM != 'sidi' ]; then return; fi
                          local dir subdir name f item dst
-                         for dir in $(find "$1" -maxdepth 1 -type d | sort -f); do
+                         for dir in $(find "$1" -maxdepth 2 -type d | sort -f); do
                            name=$(basename "$dir")
                            if [ -n "$(find "$dir" -maxdepth 1 -iname '*.rbf' 2>/dev/null)" ]; then
                              echo "  '${dir//$GIT_ROOT\//}' -> '$2'"
@@ -1138,11 +1118,10 @@ sidi_arcade()          { if [ $SYSTEM != 'sidi' ]; then return; fi
                        }
 sidi128_arcade()       { if [ $SYSTEM != 'sidi128' ]; then return; fi
                          local f name
-                         for f in $(find "$1/../../MRA/" -type f -name '*.mra' -maxdepth 1 | sort -f); do
+                         for f in $(find "$1/../MRA/" -type f -name '*.mra' -maxdepth 1 | sort -f); do
                            name=$(basename -s .mra "$f")
-                           process_mra "$f" "$2/$name" "$1"
+                           process_mra "$f" "$2/$name" "$1/arcade"
                          done
-                         rm -f "$2/$(basename "$2").rbf"
                        }
 sms_roms()             { download_url "https://archive.org/download/cylums-sega-master-system-rom-collection/Cylum's Sega Master System ROM Collection (02-16-2021).zip/Phantasy Star.zip" "$3/"
                          expand "$3/Phantasy Star.zip" "$2/roms"
@@ -1297,7 +1276,7 @@ cores=(
  # MiST/SiDi/SiDi128 Arcade folders - install arcade cores by system dependent ROM handler function
   "( 'Arcade/MiST'                                    'arcade'        ''                                                  mist_arcade          )"
   "( 'Arcade/SiDi'                                    ''              'Arcade/SiDi'                                       sidi_arcade          )"
-  "( 'Arcade/SiDi128'                                 ''              'Arcade/SiDi128/arcade'                             sidi128_arcade       )"
+  "( 'Arcade/SiDi128'                                 ''              'Arcade/SiDi128'                                    sidi128_arcade       )"
 )
 
 copy_mist_cores() {
@@ -1413,7 +1392,7 @@ copy_sidi_cores() {
   local saveIFS=$IFS
   IFS=$(echo -en "\n\b")
   local dir item src dst hdl
-  for dir in $(find "$srcroot/Cores" -type d | sort -f); do
+  for dir in $(find "$srcroot/Cores" -maxdepth 2 -type d | sort -f); do
     if [ "$(basename "$dir")" != 'old' ] && [ "$(basename "$dir")" != 'output_files' ]; then
       # check if in our list of cores
       for item in "${cores[@]}"; do

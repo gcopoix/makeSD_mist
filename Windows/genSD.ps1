@@ -481,17 +481,6 @@ function process_mra {
           [string]$dstpath,   # $2: destination base folder
           [string]$rbfpath )  # $3: source rbf folder - if empty don't copy .rbf file
 
-  $rbflookup=@(
-   #( 'mra .rbf filename reference',                    'real file name'  ),
-    ( 'Inferno (Williams)',                             'williams2'       ),
-    ( 'Joust 2 - Survival of the Fittest (revision 2)', 'williams2'       ),
-    ( 'Mystic Marathon',                                'williams2'       ),
-    ( 'Turkey Shoot',                                   'williams2'       ),
-    ( 'Power Surge',                                    'time_pilot_mist' ),
-    ( 'Time Pilot',                                     'time_pilot_mist' ),
-    ( 'Journey',                                        'journey'         )
-  )
-
   # parse informations from .mra file
   # get name (1st: <name> tag information, 2nd: use .mra filename
   $name = grep '(?<=<name>)[^<]+' $mrafile
@@ -526,17 +515,11 @@ function process_mra {
   if ($rbfpath -ne '') {
     # get correct core name
     $rbfpath = $rbfpath.replace('/InWork','').replace('/meta','')
-    $srcrbf = $rbf
-    # lookup non-matching filenames <-> .rbf name references in .mra file
-    foreach ($rlu in $rbflookup ) {
-      if ($rlu[0] -eq $name) {
-        if (Get-ChildItem "$rbfpath/*.rbf" | Where-Object {$_.name -ieq "$($rlu[1]).rbf"}) {
-          $srcrbf = $rlu[1]
-          break
-        }
-      }
+    $srcrbf = ((Get-ChildItem "$rbfpath/*.rbf") | Where-Object {$_.name -ieq "$rbf.rbf"}).fullname
+    # try source file with system as part of filename (e.g. ) case insensitive
+    if ($null -eq $srcrbf) {
+      $srcrbf = ((Get-ChildItem "$rbfpath/*.rbf") | Where-Object {$_.name -ieq "$($rbf)_$($SYSTEM)*.rbf"}).fullname
     }
-    $srcrbf = ((Get-ChildItem "$rbfpath/*.rbf") | Where-Object {$_.name -ieq "$srcrbf.rbf"}).fullname
 
     # copy .rbf file to destination folder and hide from menu (as .arc file will show up)
     if ($null -ne $srcrbf) {
@@ -859,6 +842,7 @@ function copy_eubrunosilva_sidi_cores {
 
 
 # handlers for core specific ROM actions. $1=core src directory, $2=sd core dst directory, $3=core specific cache folder
+function adam_roms          { if ($SYSTEM -eq 'mist') { sdcopy "$1/ADAM.ROM" "$2/adam.rom"; } }
 function atom_roms          { param($1,$2,$3) sdcopy "$1/ATOM.ROM" "$2/atom.rom" }
 function amiga_roms         { param($1,$2,$3)
                               sdcopy "$1/AROS.ROM" "$2/kick/aros.rom"
@@ -939,10 +923,10 @@ function atarist_roms       { param ($1,$2,$3)
                             }
 function atari800_roms      { param ($1,$2,$3) sdcopy "$1/A800XL.ROM" "$2/a800xl.rom" }
 function atari2600_roms     { param ($1,$2,$3)
-                              download_url 'https://archive.org/compress/atari-2600-champion-collection-updated' "$3/atari-2600-collection.zip" | Out-Null
-                              expand "$3/atari-2600-collection.zip" "$3/"
-                              foreach ($dir in (Get-ChildItem "$3" -Directory | Select-Object -ExpandProperty FullName | Sort-Object | replace-slash)) {
-                                sdcopy "$dir" "$SD_ROOT/ma2601/" # core presents roms by default from /MA2601 folder
+                              download_url 'https://www.atarimania.com/roms/Atari-2600-VCS-ROM-Collection.zip' "$3/" | Out-Null
+                              expand "$3/Atari-2600-VCS-ROM-Collection.zip" "$3/"
+                              foreach ($f in (Get-ChildItem "$3/ROMS" | Select-Object -ExpandProperty FullName | Sort-Object | replace-slash)) {
+                                sdcopy "$f" "$SD_ROOT/ma2601/" # core presents roms by default from /MA2601 folder
                               }
                             }
 function atari2600_arm_roms { param ($1,$2,$3)
@@ -1132,7 +1116,7 @@ function samcoupe_roms      { param ($1,$2,$3) sdcopy "$1/samcoupe.rom" "$2/" }
 function scv_roms           { param ($1,$2,$3) sdcopy "$1/scv.rom" "$2/" }
 function sidi_arcade        { param ($1,$2,$3)
                               if ($SYSTEM -ne "sidi") { return }
-                              foreach ($dir in (Get-ChildItem "$1" -Directory | Select-Object -ExpandProperty FullName | Sort-Object | replace-slash)) {
+                              foreach ($dir in (Get-ChildItem "$1" -Directory -Recurse -Depth 2 | Select-Object -ExpandProperty FullName | Sort-Object | replace-slash)) {
                                 $name = "$(Split-Path $dir -Leaf)"
                                 if (Test-Path "$dir/*.rbf") {
                                   Write-Host "  '$($dir.Replace("$GIT_ROOT/",''))' -> '$2'"
@@ -1193,12 +1177,10 @@ function sidi_arcade        { param ($1,$2,$3)
                             }
 function sidi128_arcade     { param ($1,$2,$3)
                               if ($SYSTEM -ne "sidi128") { return }
-                              # use Cores/Arcade/MRA/*.mra files for SiDI128 Arcade generation
-                              foreach ($f in (Get-ChildItem "$1/../../MRA" | Sort-Object -Property FullName)) {
+                              foreach ($f in (Get-ChildItem "$1/../MRA" | Sort-Object -Property FullName)) {
                                 $name = (Get-Item -LiteralPath $f).Basename
-                                process_mra "$f" "$2/$name" "$1"
+                                process_mra "$f" "$2/$name" "$1/arcade"
                               }
-                              Remove-Item "$2/$((Get-Item -Path $f).Name).rbf" | Out-Null
                             }
 function sms_roms           { param ($1,$2,$3)
                               download_url "https://archive.org/download/cylums-sega-master-system-rom-collection/Cylum's Sega Master System ROM Collection (02-16-2021).zip/Phantasy Star.zip" "$3/" | Out-Null
@@ -1293,7 +1275,7 @@ $cores=@(
   ( 'Computer/C16',                                   'c16',           'Computer/C16',                                      'c16_roms'             ),
   ( 'Computer/C64',                                   'fpga64',        'Computer/C64',                                      'c64_roms'             ),
   ( 'Computer/C128',                                  'c128',          'Computer/C128',                                     'c128_roms'            ),
-  ( 'Computer/Coleco Adam',                           'adam',          'Computer/Adam'                                                             ),
+  ( 'Computer/Coleco Adam',                           'adam',          'Computer/Adam',                                     'adam_roms'            ),
   ( 'Computer/Color Computer 2',                      'coco2',         'Computer/CoCo',                                     'coco2_roms'           ),
   ( 'Computer/Color Computer 3',                      '',              'Computer/Coco3',                                    'coco3_roms'           ),
   ( 'Computer/EG2000 Colour Genie',                   '',              'Computer/eg2000'                                                           ),
@@ -1358,7 +1340,7 @@ $cores=@(
  # MiST/SiDi/SiDi128 Arcade folders - install arcade cores by system dependent ROM handler function
   ( 'Arcade/MiST',                                    'arcade',        '',                                                  'mist_arcade'          ),
   ( 'Arcade/SiDi',                                    '',              'Arcade/SiDi',                                       'sidi_arcade'          ),
-  ( 'Arcade/SiDi128',                                 '',              'Arcade/SiDi128/arcade',                             'sidi128_arcade'       )
+  ( 'Arcade/SiDi128',                                 '',              'Arcade/SiDi128',                                    'sidi128_arcade'       )
 )
 
 function copy_mist_cores {
@@ -1465,7 +1447,7 @@ function copy_sidi_cores {
   copy_latest_file "$srcroot/$($params[0])" "$dstroot/firmware.upg" 'firmware*.upg'
 
   # loop over folders in SiDi repository
-  :loop foreach ($dir in (Get-ChildItem -Recurse $srcroot/Cores -Directory | Select-Object  -ExpandProperty FullName | Sort-Object | replace-slash)) {
+  :loop foreach ($dir in (Get-ChildItem -Recurse -Depth 2 $srcroot/Cores -Directory | Select-Object  -ExpandProperty FullName | Sort-Object | replace-slash)) {
     if (((Split-Path $dir -Leaf) -ne 'old') -and ((Split-Path $dir -Leaf) -ne 'output_files')) {
       # check if in our list of cores
       foreach($item in $cores) {
