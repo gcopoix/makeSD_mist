@@ -547,17 +547,39 @@ copy_jotego_arcade_cores() {
     "( 'SEGA S16B'  'jts16b'  )"
     "( 'TAITO TNZS' 'jtkiwi'  )"
   )
+  # some unsupported rbfs that are no longer supported by Jotego
+  local unsupported_rbfs=(
+    # MiST Cores archived by tdelage26
+    "( 'jtriders.rbf' 'https://github.com/tdelage26/mist-binaries/raw/refs/heads/master/cores/arcade/_Unsupported Jotego/Konami Sunset Riders/jtriders_MiST_260813.rbf'            )"
+    "( 'jtoutrun.rbf' 'https://github.com/tdelage26/mist-binaries/raw/refs/heads/master/cores/arcade/_Unsupported Jotego/Sega Outrun/jtoutrun_MiST_231108.rbf'                     )"
+    "( 'jtshanon.rbf' 'https://github.com/tdelage26/mist-binaries/raw/refs/heads/master/cores/arcade/_Unsupported Jotego/Sega Super Hang-On/jtshanon_MiST_230626.rbf'              )"
+    "( 'jtgaiden.rbf' 'https://github.com/tdelage26/mist-binaries/raw/refs/heads/master/cores/arcade/_Unsupported Jotego/Shadow Warriors - Gaiden/jtgaiden_MiST_250301.rbf'        )"
+    # SiDi Cores archived by tdelage26
+    "( 'jtsf.rbf'     'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Capcom Street Fighter 1/jtsf_SiDi_230621.rbf'      )"
+    "( 'jtriders.rbf' 'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Konami Sunset Riders/jtriders_SiDi_260813.rbf'     )"
+    "( 'jtkiwi.rbf'   'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/New Zealand Story - Kiwi/jtkiwi_SiDi_240216.rbf'   )"
+    "( 'jtoutrun.rbf' 'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Sega Outrun/jtoutrun_SiDi_20231108.rbf'            )"
+    "( 'jtshanon.rbf' 'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Sega Super Hang-On/jtshanon_SiDi_230626.rbf'       )"
+    "( 'jts16.rbf'    'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Sega System 16-16B/jts16_SiDi_240516_.rbf'         )"
+    "( 'jts16b.rbf'   'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Sega System 16-16B/jts16b_SiDi_240516.rbf'         )"
+    "( 'jtgaiden.rbf' 'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Shadow Warriors - Gaiden/jtgaiden_SiDi_250301.rbf' )"
+    # no SiDi128 Cores archived yet by tdelage26
+  )
 
   # get jotego git
   local srcpath=$GIT_ROOT/jotego
   clone_or_update_git 'https://github.com/jotego/jtbin.git' "$srcpath"
 
-  if [ $SYSTEM != 'sidi128' ]; then
-    # add non-official mist/sidi cores from somhi repo (not yet part of jotego binaries)
-    local jtname=$([[ $SYSTEM == 'mist' ]] && echo 'jtoutrun_MiST_230312' || echo 'jtoutrun_SiDi_20231108')
-    download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/$jtname.rbf" "$srcpath/$SYSTEM/jtoutrun.rbf"
-    download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/jtkiwi.rbf"  "$srcpath/$SYSTEM/"
-  fi
+  # manually add unsupported rbfs for current $SYSTEM that are (no longer?) supported in jtbin repo (archived by tdelage26)
+  local line
+  for line in "${unsupported_rbfs[@]}"; do
+    eval "item=$line"
+    if [ ! -f "$srcpath/$SYSTEM/${item[0]}" ]; then
+      if echo "${item[1]}" | grep -iq "_${SYSTEM}_"; then
+        download_url "${item[1]}" "$srcpath/$SYSTEM/${item[0]}"
+      fi
+    fi
+  done
 
   # ini file from jotego git
   #sdcopy "$srcpath/arc/mist.ini" "$dstroot/"

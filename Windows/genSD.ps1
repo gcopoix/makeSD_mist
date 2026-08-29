@@ -38,13 +38,11 @@ function check_dependencies {
   # Handle external tool names with OS dependent script-scoped variables.
   if ($isLinux) {
     $script:missing = ''
-    if (&which unzip  ) { $script:unzip    = 'unzip'   } else { $missing = "$missing unzip"   }
-    if (&which unrar  ) { $script:unrar    = 'unrar'   } else { $missing = "$missing unrar"   }
-    if (&which 7z     ) { $script:sevenzip = '7z'      } else { $missing = "$missing 7zip"    }
-    if (&which git    ) { $script:git      = 'git'     } else { $missing = "$missing git"     }
-    if (&which fatattr) { $script:attrib   = 'fatattr' } else { $missing = "$missing fatattr" }
-    $script:touch = 'touch'
-    $env:TEMP     = '/tmp'
+    if (-not (&which unzip  )) { $missing = "$missing unzip"   }
+    if (-not (&which unrar  )) { $missing = "$missing unrar"   }
+    if (-not (&which 7z     )) { $missing = "$missing 7zip"    }
+    if (-not (&which git    )) { $missing = "$missing git"     }
+    if (-not (&which fatattr)) { $missing = "$missing fatattr" }
 
     if(-not ( Test-Path "$TOOLS_ROOT/mra")) {
       if ($false) {
@@ -58,16 +56,26 @@ function check_dependencies {
           &make -C "$GIT_ROOT/mra-tools-c" clean
         }
       } else {
-        download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/" | Out-Null
-        &chmod +x -f "$TOOLS_ROOT/mra" *>$null
+        if (download_url 'https://github.com/mist-devel/mra-tools-c/raw/master/release/linux/mra' "$TOOLS_ROOT/") {
+          &chmod +x -f "$TOOLS_ROOT/mra" *>$null
+        } else {
+          $missing = "$missing $TOOLS_ROOT/mra"
+        }
       }
-      $script:mra = "$TOOLS_ROOT/mra"
     }
     if ($missing) {
       Write-Host -ForegroundColor red " ERROR: Some required packages ($missing ) missing." `
                                    "`r`nPlease install by 'sudo apt install$missing' and restart this script."
       exit 1
     }
+    $script:unzip    = 'unzip'
+    $script:unrar    = 'unrar'
+    $script:sevenzip = '7z'
+    $script:touch    = 'touch'
+    $script:git      = 'git'
+    $script:attrib   = 'fatattr'
+    $script:mra      = "$TOOLS_ROOT/mra"
+    $env:TEMP        = '/tmp'
   } else {
     #if (-not (Test-Path "$TOOLS_ROOT/wget.exe")) {
     #  download_url 'http://eternallybored.org/misc/wget/1.21.4/32/wget.exe' "$TOOLS_ROOT/" | Out-Null
@@ -595,16 +603,36 @@ function copy_jotego_arcade_cores {
     ( 'SEGA S16B',  @( 'jts16b'  ) ),
     ( 'TAITO TNZS', @( 'jtkiwi'  ) )
   )
+  # some unsupported rbfs that are no longer supported by Jotego
+  $unsupported_rbfs=@(
+    # MiST Cores archived by tdelage26
+    ( 'jtriders.rbf', 'https://github.com/tdelage26/mist-binaries/raw/refs/heads/master/cores/arcade/_Unsupported Jotego/Konami Sunset Riders/jtriders_MiST_260813.rbf'            ),
+    ( 'jtoutrun.rbf', 'https://github.com/tdelage26/mist-binaries/raw/refs/heads/master/cores/arcade/_Unsupported Jotego/Sega Outrun/jtoutrun_MiST_231108.rbf'                     ),
+    ( 'jtshanon.rbf', 'https://github.com/tdelage26/mist-binaries/raw/refs/heads/master/cores/arcade/_Unsupported Jotego/Sega Super Hang-On/jtshanon_MiST_230626.rbf'              ),
+    ( 'jtgaiden.rbf', 'https://github.com/tdelage26/mist-binaries/raw/refs/heads/master/cores/arcade/_Unsupported Jotego/Shadow Warriors - Gaiden/jtgaiden_MiST_250301.rbf'        ),
+    # SiDi Cores archived by tdelage26
+    ( 'jtsf.rbf',     'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Capcom Street Fighter 1/jtsf_SiDi_230621.rbf'      ),
+    ( 'jtriders.rbf', 'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Konami Sunset Riders/jtriders_SiDi_260813.rbf'     ),
+    ( 'jtkiwi.rbf',   'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/New Zealand Story - Kiwi/jtkiwi_SiDi_240216.rbf'   ),
+    ( 'jtoutrun.rbf', 'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Sega Outrun/jtoutrun_SiDi_20231108.rbf'            ),
+    ( 'jtshanon.rbf', 'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Sega Super Hang-On/jtshanon_SiDi_230626.rbf'       ),
+    ( 'jts16.rbf',    'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Sega System 16-16B/jts16_SiDi_240516_.rbf'         ),
+    ( 'jts16b.rbf',   'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Sega System 16-16B/jts16b_SiDi_240516.rbf'         ),
+    ( 'jtgaiden.rbf', 'https://github.com/tdelage26/SiDi-FPGA/raw/refs/heads/master/Cores/Arcade/SiDi/_Unsupported Jotego Cores/Shadow Warriors - Gaiden/jtgaiden_SiDi_250301.rbf' )
+    # no SiDi128 Cores archived yet by tdelage26
+  )
 
   # get jotego git
   $srcpath="$GIT_ROOT/jotego"
   clone_or_update_git 'https://github.com/jotego/jtbin.git' $srcpath
 
-  # add non-official mist/sidi cores from somhi repo (not yet part of jotego binaries)
-  if ($SYSTEM -ne 'sidi128') {
-    $jtname = if ($SYSTEM -eq 'mist') {'jtoutrun_MiST_230312'} else {'jtoutrun_SiDi_20231108'}
-    download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/$jtname.rbf" "$srcpath/$SYSTEM/jtoutrun.rbf" | Out-Null
-    download_url "https://github.com/somhi/jtbin/raw/master/$SYSTEM/jtkiwi.rbf"  "$srcpath/$SYSTEM/" | Out-Null
+  # manually add unsupported rbfs for current $SYSTEM that are no longer supported by Jotego (archived by tdelage26)
+  foreach ($item in $unsupported_rbfs) {
+    if (-not (Test-Path "$srcpath/$SYSTEM/$($item[0])")) {
+      if ($item[1].Contains("_$SYSTEM_")) {
+        download_url "$($item[1])" "$srcpath/$SYSTEM/$($item[0])" | Out-Null
+      }
+    }
   }
 
   # ini file from jotego git

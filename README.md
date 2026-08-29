@@ -140,7 +140,7 @@ During installation, several temporary folders are created in the current folder
 └── tools                # required tools for executing this script
 ```
 It is a good idea to keep these folders as the next run will be much faster (git only needs to update and not clone, the download of the MAME ROMs and the other miscellaneous files can be skipped, ...). \
-This saves more than 10GB of data not being fetched again.
+This saves more than 25GB of data not being fetched again.
 
 ## Developing
 The project contains a development setup for [Visual Studio Code](https://code.visualstudio.com) with pre-configured
@@ -155,7 +155,7 @@ Best practice here is to simply open the project by
 
 VisualStudio Code will open the project and install/configure the required plugins.
 
-For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1533-L1575) left disabled in the scripts.
+For testing/debugging specific cores, please refer to some [test code](Linux/genSD.sh#L1544-L1586) left disabled in the scripts.
 
 A [configuration file](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#settings-support-in-scriptanalyzer) for PowerShell [ScriptAnalyzer](https://learn.microsoft.com/en-us/powershell/module/psscriptanalyzer) is [provided](.vscode/PSScriptAnalyzerSettings.psd1) and used by both Visual Studio Code and the Windows [test.bat](test/test.bat#L15) script
 
@@ -245,6 +245,9 @@ Top optimize/speed up the test run 2 options may be useful:
   Some .mra files in the Jotego repository refer missing .rbf files in the [mist](https://github.com/jotego/jtbin/tree/master/mist), [sidi](https://github.com/jotego/jtbin/tree/master/sidi) or [sidi128](https://github.com/jotego/jtbin/tree/master/sidi128) folders. The reason for the missing cores are
   - insufficient target board FPGA ressources and
   - different development status
+
+  [tdelage26](https://github.com/tdelage26) offers some now [unsupported cores](https://github.com/tdelage26/mist-binaries/tree/master/cores/arcade/_Unsupported%20Jotego) in [Jotego's jtbin](https://github.com/jotego/jtbin) repository for **MiST** and **SiDi**. \
+  The scripts [uses these files](Linux/genSD.sh#L551-L567) to enhance the current Jotego ROM generation here.
 
 ## Ideas for improvements
 - **more ROMs** \
