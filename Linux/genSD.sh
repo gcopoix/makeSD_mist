@@ -571,9 +571,8 @@ copy_jotego_arcade_cores() {
   clone_or_update_git 'https://github.com/jotego/jtbin.git' "$srcpath"
 
   # manually add unsupported rbfs for current $SYSTEM that are (no longer?) supported in jtbin repo (archived by tdelage26)
-  local line
-  for line in "${unsupported_rbfs[@]}"; do
-    eval "item=$line"
+  local item; for item in "${unsupported_rbfs[@]}"; do
+    eval "item=$item"
     if [ ! -f "$srcpath/$SYSTEM/${item[0]}" ]; then
       if echo "${item[1]}" | grep -iq "_${SYSTEM}_"; then
         download_url "${item[1]}" "$srcpath/$SYSTEM/${item[0]}"
@@ -613,8 +612,8 @@ copy_gehstock_mist_cores() {
     "( 'williams2.rbf'    'william2.rbf' )" # Arcade_MiST/Williams 6809 rev.2 Hardware
    #"( 'craterraider.rbf' 'crater.rbf'   )" # Arcade_MiST/Midway MCR Scroll
    #"( 'spyhunter.rbf'    'spyhunt.rbf'  )" # Arcade_MiST/Midway MCR Scroll
-    "( 'AppleII_MiST.rbf' ''             )" # drop Computer_MiST/AppleII_MiST (newer version on MiST/SiDi repos)
-    "( 'Orao_MiST.rbf'    ''             )" # drop Computer_MiST/ORAO_MiST (newer version on MiST/SiDi repos)
+    "( 'appleii.rbf'      ''             )" # drop Computer_MiST/AppleII_MiST (newer version on MiST/SiDi repos)
+    "( 'orao.rbf'         ''             )" # drop Computer_MiST/ORAO_MiST (newer version on MiST/SiDi repos)
   )
   # get Gehstock git
   local srcroot="$GIT_ROOT/MiST/gehstock"
@@ -625,7 +624,7 @@ copy_gehstock_mist_cores() {
   local saveIFS=$IFS
   IFS=$(echo -en "\n\b")
   shopt -s nocasematch
-  for dir in $(find "$srcroot" -mindepth 2 -maxdepth 2 -type d | sort -f); do
+  for dir in $(find "$srcroot" -mindepth 1 -maxdepth 2 -type d | sort -f); do
     dst=${dir//$srcroot/}; dst=${dst//'_MiST'/}; dst=$dstroot/${dst//'/Arcade/'/'/Arcade/Gehstock/'}
     for rbf in $(find "$dir" -iname '*.rbf' | sort -f); do
       name=$(basename "${rbf,,}"); name=${name//'_MiST'/};
@@ -634,7 +633,7 @@ copy_gehstock_mist_cores() {
         if [ "$name" = "${item[0]}" ]; then
           name=${item[1]}
           if [ -z "$name" ]; then
-            echo -e "\e[1;33m Dropped '$dir'\e[0m\n"
+            echo -e "\e[1;33m Dropped obsolete '$dir'\e[0m\n"
             continue 2
           fi
           break

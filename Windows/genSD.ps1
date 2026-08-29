@@ -664,8 +664,8 @@ function copy_gehstock_mist_cores {
     ( 'williams2.rbf',    'william2.rbf' ), # Arcade_MiST/Williams 6809 rev.2 Hardware
    #( 'craterraider.rbf', 'crater.rbf'   )  # Arcade_MiST/Midway MCR Scroll
    #( 'spyhunter.rbf',    'spyhunt.rbf'  )  # Arcade_MiST/Midway MCR Scroll
-    ( 'AppleII_MiST.rbf', ''             ), # drop Computer_MiST/AppleII_MiST (newer version on MiST/SiDi repos)
-    ( 'Orao_MiST.rbf',    ''             )  # drop Computer_MiST/ORAO_MiST (newer version on MiST/SiDi repos)
+    ( 'appleii.rbf',      ''             ), # drop Computer_MiST/AppleII_MiST (newer version on MiST/SiDi repos)
+    ( 'orao.rbf',         ''             )  # drop Computer_MiST/ORAO_MiST (newer version on MiST/SiDi repos)
   )
   # get Gehstock git
   $srcroot="$GIT_ROOT/MiST/gehstock"
@@ -680,7 +680,7 @@ function copy_gehstock_mist_cores {
         if ($name -eq $item[0]) {
           $name = $item[1]
           if ($name -eq '') {
-            Write-Host -ForegroundColor yellow " Dropped `'$dir`'"
+            Write-Host -ForegroundColor yellow " Dropped obsolete `'$dir`'"
             continue 2
           }
           break
