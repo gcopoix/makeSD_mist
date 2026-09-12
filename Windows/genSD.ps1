@@ -672,7 +672,7 @@ function copy_gehstock_mist_cores {
   clone_or_update_git 'https://github.com/Gehstock/Mist_FPGA_Cores.git' $srcroot
 
   # find all cores
-  :loop foreach ($dir in (Get-ChildItem $srcroot/*/. -Directory -Depth 0 | Sort-Object -Property FullName | replace-slash)) {
+  :loop foreach ($dir in (Get-ChildItem $srcroot/*/. -Directory -Depth 1 | Sort-Object -Property FullName | replace-slash)) {
     $dst = "$dstroot$(($dir.Replace($srcroot,'') -ireplace '_MiST', '').Replace('/Arcade/','/Arcade/Gehstock/'))"
     foreach ($rbf in (Get-ChildItem $dir -Include '*.rbf' -Recurse | Select-Object -ExpandProperty FullName | Sort-Object | replace-slash)) {
       $name = $((Split-Path $rbf -Leaf).ToLower() -ireplace '_MiST', '')
@@ -715,7 +715,7 @@ function copy_gehstock_mist_cores {
         if ($null -ne $hdl) {
           &$hdl $dir $dst "$MISC_FILES/$(Split-Path $dst -Leaf)"
         }
-        break
+        continue loop
       }
     } # foreach $item
   } # foreach $dir
