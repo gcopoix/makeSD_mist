@@ -629,7 +629,7 @@ function copy_jotego_arcade_cores {
   # manually add unsupported rbfs for current $SYSTEM that are no longer supported by Jotego (archived by tdelage26)
   foreach ($item in $unsupported_rbfs) {
     if (-not (Test-Path "$srcpath/$SYSTEM/$($item[0])")) {
-      if ($item[1].Contains("_$SYSTEM_")) {
+      if ($item[1] -Like "*_$SYSTEM_*") {
         download_url "$($item[1])" "$srcpath/$SYSTEM/$($item[0])" | Out-Null
       }
     }
