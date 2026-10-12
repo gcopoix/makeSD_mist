@@ -17,8 +17,8 @@ PowerShell -ExecutionPolicy Bypass "$ErrorActionPreference = 'SilentlyContinue';
 rem Available disk space test
 for /f "usebackq tokens=3" %%s in (`dir /-c /-o /w "%~dp0"`) do set avail=%%s
 set avail=%avail:~0,-9%
-if %avail% LSS 50 (
-  echo "ERROR: Not enough free disk space (only %avail%GB available). At least 50GB free disk space required."
+if %avail% LSS 150 (
+  echo "ERROR: Not enough free disk space (only %avail%GB available). At least 150GB free disk space required."
   exit /b 1
 )
 
@@ -68,6 +68,7 @@ for %%s in (mist sidi sidi128) do (
                                        "Get-Content -Path \"!dstSD!\log.txt\" | Select-String -Pattern 'rbf(.) not found' | Sort-Object -Unique | Write-Host | Tee-Object \"!dstSD!\log.txt\" -Append;" ^
                                        "" ^
                                        "Write-Host -ForegroundColor red \"`r`nMissing MAME ROMs:\"                                                           | Tee-Object \"!dstSD!\log.txt\" -Append;" ^
+                                       "Get-Content -Path \"!dstSD!\log.txt\" | Select-String -Pattern 'ERROR: Download '   | Sort-Object -Unique            | Write-Host | Tee-Object \"!dstSD!\log.txt\" -Append;" ^
                                        "Get-Content -Path \"!dstSD!\log.txt\" | Select-String -Pattern 'zip file not found' | Sort-Object -Unique            | Write-Host | Tee-Object \"!dstSD!\log.txt\" -Append;" ^
                                        "" ^
                                        "Write-Host -ForegroundColor red \"`r`nMAME ROMs with wrong checksum:\"                                               | Tee-Object \"!dstSD!\log.txt\" -Append;" ^

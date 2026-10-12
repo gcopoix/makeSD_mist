@@ -1,0 +1,12 @@
+{
+	// See https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_workspace-recommended-extensions
+	// for the documentation about the extensions.json format
+	// https://code.visualstudio.com/docs/editor/variables-reference
+
+	"recommendations": [
+		"rogalmic.bash-debug",  // bash debugger
+		"ms-vscode.powershell", // powershell support
+	],
+	"unwantedRecommendations": [
+	]
+}
